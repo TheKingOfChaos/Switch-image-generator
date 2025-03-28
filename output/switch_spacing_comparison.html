@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Switch Spacing Comparison</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .comparison {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .switch-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .measurement {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .measurement span {
+            display: inline-block;
+            padding: 5px 10px;
+            background-color: yellow;
+            border-radius: 4px;
+        }
+        .difference {
+            text-align: right;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Switch Spacing Comparison</h1>
+    
+    <div class="comparison">
+        <h2>Original Switch (Uneven Spacing)</h2>
+        <div class="switch-container">
+            <object data="switch_original.svg" type="image/svg+xml" width="100%"></object>
+        </div>
+        <div class="measurement">
+            <span>Left spacing: 20px</span>
+            <span>Right spacing: 54px</span>
+            <span class="difference">Difference: 34px</span>
+        </div>
+    </div>
+    
+    <div class="comparison">
+        <h2>Fixed Switch (Balanced Spacing)</h2>
+        <div class="switch-container">
+            <object data="switch_fixed.svg" type="image/svg+xml" width="100%"></object>
+        </div>
+        <div class="measurement">
+            <span>Left spacing: 20px</span>
+            <span>Right spacing: 20px</span>
+            <span class="difference">Difference: 0px</span>
+        </div>
+    </div>
+</body>
+</html>
