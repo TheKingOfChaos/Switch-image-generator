@@ -28,6 +28,10 @@ switch_grafic_generator/
 - Generate network switch SVG visualizations with different layouts:
   - Single row layout with up to 24 normal ports and 2 SFP ports
   - Double row (zigzag) layout with up to 48 normal ports and 6 SFP ports
+- Flexible SFP port layout options:
+  - Zigzag layout (default) - SFP ports in a zigzag pattern (similar to regular ports)
+  - Horizontal layout - All SFP ports in a single horizontal row
+- Group ports with additional spacing between groups (both regular and SFP ports)
 - Customize port colors based on VLAN assignments
 - Set port status (up/down/disabled)
 - Add custom port labels

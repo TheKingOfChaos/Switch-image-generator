@@ -121,6 +121,8 @@ class SwitchSVGGenerator:
         port_shape: PortShape = PortShape.ROUNDED,
         show_status_indicator: bool = True,
         sfp_ports: int = 0,  # Number of SFP ports (0-6)
+        sfp_layout: str = "zigzag",  # Options: "horizontal" or "zigzag"
+        sfp_group_size: int = 0,  # Number of SFP ports per group (0 means no grouping)
         switch_body_color: Optional[str] = None,  # Custom color for the switch body
         switch_body_border_color: str = "#000000",  # Border color for the switch body (default: black)
         switch_body_border_width: int = 2,  # Border width for the switch body
@@ -166,6 +168,8 @@ class SwitchSVGGenerator:
         self.port_height = max(port_height, 10)  # Minimum port height
         self.port_spacing = max(port_spacing, 2)  # Minimum spacing
         self.sfp_ports = sfp_ports
+        self.sfp_layout = sfp_layout
+        self.sfp_group_size = sfp_group_size
         self.port_group_size = port_group_size
         self.port_group_spacing = port_group_spacing
         
@@ -412,16 +416,24 @@ class SwitchSVGGenerator:
         # For regular ports, we need columns * (width + spacing)
         regular_ports_width = (regular_port_columns * (self.port_width + self.port_spacing)) + port_grouping_extra_width
         
-        # For SFP ports, we need to check if they're arranged horizontally or vertically
-        # If there's only one SFP port or they're arranged horizontally (1 per row),
-        # we need sfp_columns * (width + spacing)
-        # If they're arranged vertically (2 per column), we only need 1 column width
-        if self.sfp_ports <= 2:
-            # SFP ports are arranged vertically (one below the other)
-            sfp_ports_width = 40  # Just one column width
+        # For SFP ports, calculate width based on layout
+        if self.sfp_layout == "horizontal":
+            # For horizontal layout, all SFP ports are in a single row
+            sfp_ports_width = self.sfp_ports * 40  # Each SFP port is 40px wide
+            sfp_ports_width += (self.sfp_ports - 1) * self.port_spacing  # Add spacing between ports
+            
+            # Add extra spacing for SFP port grouping if enabled
+            if self.sfp_group_size > 0 and self.sfp_ports > 1:
+                sfp_groups = (self.sfp_ports + self.sfp_group_size - 1) // self.sfp_group_size
+                sfp_ports_width += (sfp_groups - 1) * self.port_group_spacing
         else:
-            # SFP ports are arranged horizontally (side by side)
-            sfp_ports_width = (sfp_columns * 40) + ((sfp_columns - 1) * self.port_spacing)
+            # For vertical or zigzag layout
+            if self.sfp_ports <= 2:
+                # SFP ports are arranged vertically (one below the other)
+                sfp_ports_width = 40  # Just one column width
+            else:
+                # SFP ports are arranged in zigzag pattern
+                sfp_ports_width = (sfp_columns * 40) + ((sfp_columns - 1) * self.port_spacing)
         
         # Calculate the position of the last port
         if self.sfp_ports > 0:
@@ -995,66 +1007,171 @@ class SwitchSVGGenerator:
             # Calculate the total width available for ports (adjusted_width minus margins)
             available_width = adjusted_width - 2 * 10  # 10px margin on each side
             
-            # Calculate how much space is needed for SFP ports
-            sfp_cols = (self.sfp_ports + 1) // 2  # Ceiling division for odd number of SFP ports
-            sfp_width_needed = sfp_cols * sfp_width + (sfp_cols - 1) * sfp_port_spacing
-            
             # Position SFP ports right after the last regular port with sfp_spacing
             sfp_start_x = last_port_x + self.port_width + sfp_spacing
             
-            # Calculate the end position of the SFP ports
-            sfp_end_x = sfp_start_x + sfp_width_needed
-            
-            # Check if this would exceed the available width
-            if sfp_end_x > available_width + 10 - end_spacing:
-                # If it would exceed, we need to adjust the switch width
-                # This will be handled automatically since we calculate the adjusted_width
-                # based on the actual_width which includes the SFP ports
-                logger.warning(f"SFP ports would exceed available width. Adjusting switch width.")
-            
-            # Position SFP ports
-            for i in range(self.sfp_ports):
-                sfp_num = self.num_ports + i + 1
-                sfp_x = sfp_start_x
+            # Handle different SFP layouts
+            if self.sfp_layout == "horizontal":
+                # Place all SFP ports in a single horizontal row
                 
-                # Position SFP ports vertically aligned with regular ports
-                # First SFP port (i=0) goes in the top row (y=70)
-                # Second SFP port (i=1) goes in the row below with proper spacing
-                if i == 0:
-                    sfp_y = 70  # Top row - same as regular ports
-                else:
-                    sfp_y = 94  # Second row - with proper spacing (24px from top row)
+                # Calculate how many groups we have for SFP ports
+                sfp_groups = 1
+                if self.sfp_group_size > 0 and self.sfp_ports > 0:
+                    sfp_groups = (self.sfp_ports + self.sfp_group_size - 1) // self.sfp_group_size
                 
-                # Use the VLAN color for the SFP port
-                sfp_color = self.get_port_color(sfp_num)
+                # Calculate extra spacing from grouping
+                sfp_extra_spacing = (sfp_groups - 1) * self.port_group_spacing if sfp_groups > 1 else 0
                 
-                # Create SFP port group with tooltip
-                sfp_label = self.port_labels.get(sfp_num, f"SFP{i+1}")
-                vlan_id = self.port_vlan_map.get(sfp_num, 1)
+                # Calculate total width needed for SFP ports
+                sfp_width_needed = (self.sfp_ports * sfp_width) + ((self.sfp_ports - 1) * sfp_port_spacing) + sfp_extra_spacing
                 
-                tooltip = f"SFP Port: {sfp_num}, Label: {sfp_label}, VLAN: {vlan_id}"
+                # Calculate the end position of the SFP ports
+                sfp_end_x = sfp_start_x + sfp_width_needed
                 
-                svg.append(f'  <g id="sfp-{i+1}">')
-                svg.append(f'    <title>{tooltip}</title>')
+                # Check if this would exceed the available width
+                if sfp_end_x > available_width + 10 - end_spacing:
+                    logger.warning(f"SFP ports would exceed available width. Adjusting switch width.")
                 
-                # SFP port rectangle
-                svg.append(f'    <rect x="{sfp_x}" y="{sfp_y}" width="{sfp_width}" height="{sfp_height}" '
-                          f'fill="{sfp_color}" stroke="#000000" stroke-width="1" rx="2" ry="2" />')
+                # Position SFP ports in a single row
+                for i in range(self.sfp_ports):
+                    sfp_num = self.num_ports + i + 1
+                    
+                    # Calculate position with SFP port grouping if enabled
+                    if self.sfp_group_size > 0 and i > 0:
+                        # Calculate which group this SFP port belongs to
+                        group_num = i // self.sfp_group_size
+                        
+                        # Add extra spacing between groups
+                        extra_spacing = group_num * self.port_group_spacing
+                        
+                        sfp_x = sfp_start_x + i * (sfp_width + sfp_port_spacing) + extra_spacing
+                    else:
+                        # Standard spacing without grouping
+                        sfp_x = sfp_start_x + i * (sfp_width + sfp_port_spacing)
+                    
+                    # All SFP ports are in the same row, aligned with the bottom row of regular ports
+                    sfp_y = start_y + (self.port_height + 4)  # Align with bottom row
+                    
+                    # Use the VLAN color for the SFP port
+                    sfp_color = self.get_port_color(sfp_num)
+                    
+                    # Create SFP port group with tooltip
+                    sfp_label = self.port_labels.get(sfp_num, f"SFP{i+1}")
+                    vlan_id = self.port_vlan_map.get(sfp_num, 1)
+                    
+                    tooltip = f"SFP Port: {sfp_num}, Label: {sfp_label}, VLAN: {vlan_id}"
+                    
+                    svg.append(f'  <g id="sfp-{i+1}">')
+                    svg.append(f'    <title>{tooltip}</title>')
+                    
+                    # SFP port rectangle
+                    svg.append(f'    <rect x="{sfp_x}" y="{sfp_y}" width="{sfp_width}" height="{sfp_height}" '
+                              f'fill="{sfp_color}" stroke="#000000" stroke-width="1" rx="2" ry="2" />')
+                    
+                    # SFP port label
+                    svg.append(f'    <text x="{sfp_x + sfp_width/2}" y="{sfp_y + sfp_height/2 + 4}" '
+                              f'font-family="Arial" font-size="10" fill="white" '
+                              f'text-anchor="middle" dominant-baseline="middle">{sfp_label}</text>')
+                    
+                    # Add status indicator for SFP ports too
+                    if self.show_status_indicator:
+                        # Get the status for this SFP port
+                        sfp_status = self.port_status_map.get(sfp_num, PortStatus.UP)
+                        indicator_x = sfp_x + sfp_width - 5
+                        indicator_y = sfp_y + 5
+                        
+                        # Only show indicator if status is not UP
+                        if sfp_status != PortStatus.UP:
+                            svg.append(f'    <circle cx="{indicator_x}" cy="{indicator_y}" r="3" '
+                                      f'fill="{self.STATUS_COLORS[sfp_status]}" stroke="white" stroke-width="0.5" />')
+                    
+                    # Close the SFP port group
+                    svg.append(f'  </g>')
                 
-                # SFP port label
-                svg.append(f'    <text x="{sfp_x + sfp_width/2}" y="{sfp_y + sfp_height/2 + 4}" '
-                          f'font-family="Arial" font-size="10" fill="white" '
-                          f'text-anchor="middle" dominant-baseline="middle">{sfp_label}</text>')
+            else:  # Default to zigzag layout
+                # Place SFP ports in a zigzag pattern (similar to regular ports)
                 
-                # Add status indicator for SFP ports too
-                if self.show_status_indicator:
-                    # Get the status for this SFP port
-                    sfp_status = self.port_status_map.get(sfp_num, PortStatus.UP)
-                    indicator_x = sfp_x + sfp_width - 5
-                    indicator_y = sfp_y + 5
+                # Calculate how many columns we need for SFP ports
+                sfp_cols = (self.sfp_ports + 1) // 2  # Ceiling division for odd number of SFP ports
                 
-                # Close the SFP port group
-                svg.append(f'  </g>')
+                # Calculate how many groups we have for SFP ports
+                sfp_groups = 1
+                if self.sfp_group_size > 0 and sfp_cols > 0:
+                    sfp_groups = (sfp_cols + self.sfp_group_size - 1) // self.sfp_group_size
+                
+                # Calculate extra spacing from grouping
+                sfp_extra_spacing = (sfp_groups - 1) * self.port_group_spacing if sfp_groups > 1 else 0
+                
+                # Calculate total width needed for SFP ports
+                sfp_width_needed = (sfp_cols * sfp_width) + ((sfp_cols - 1) * sfp_port_spacing) + sfp_extra_spacing
+                
+                # Calculate the end position of the SFP ports
+                sfp_end_x = sfp_start_x + sfp_width_needed
+                
+                # Check if this would exceed the available width
+                if sfp_end_x > available_width + 10 - end_spacing:
+                    logger.warning(f"SFP ports would exceed available width. Adjusting switch width.")
+                
+                # Position SFP ports in a zigzag pattern
+                for i in range(self.sfp_ports):
+                    sfp_num = self.num_ports + i + 1
+                    
+                    # Calculate row and column for zigzag pattern
+                    # Even ports (0, 2, 4...) go in row 1, odd ports (1, 3, 5...) go in row 2
+                    row = i % 2
+                    col = i // 2
+                    
+                    # Calculate position with SFP port grouping if enabled
+                    if self.sfp_group_size > 0 and col > 0:
+                        # Calculate which group this SFP port belongs to
+                        group_num = col // self.sfp_group_size
+                        
+                        # Add extra spacing between groups
+                        extra_spacing = group_num * self.port_group_spacing
+                        
+                        sfp_x = sfp_start_x + col * (sfp_width + sfp_port_spacing) + extra_spacing
+                    else:
+                        # Standard spacing without grouping
+                        sfp_x = sfp_start_x + col * (sfp_width + sfp_port_spacing)
+                    
+                    # Position SFP ports vertically aligned with regular ports
+                    sfp_y = start_y + row * (self.port_height + 4)  # 4px spacing between rows
+                    
+                    # Use the VLAN color for the SFP port
+                    sfp_color = self.get_port_color(sfp_num)
+                    
+                    # Create SFP port group with tooltip
+                    sfp_label = self.port_labels.get(sfp_num, f"SFP{i+1}")
+                    vlan_id = self.port_vlan_map.get(sfp_num, 1)
+                    
+                    tooltip = f"SFP Port: {sfp_num}, Label: {sfp_label}, VLAN: {vlan_id}"
+                    
+                    svg.append(f'  <g id="sfp-{i+1}">')
+                    svg.append(f'    <title>{tooltip}</title>')
+                    
+                    # SFP port rectangle
+                    svg.append(f'    <rect x="{sfp_x}" y="{sfp_y}" width="{sfp_width}" height="{sfp_height}" '
+                              f'fill="{sfp_color}" stroke="#000000" stroke-width="1" rx="2" ry="2" />')
+                    
+                    # SFP port label
+                    svg.append(f'    <text x="{sfp_x + sfp_width/2}" y="{sfp_y + sfp_height/2 + 4}" '
+                              f'font-family="Arial" font-size="10" fill="white" '
+                              f'text-anchor="middle" dominant-baseline="middle">{sfp_label}</text>')
+                    
+                    # Add status indicator for SFP ports too
+                    if self.show_status_indicator:
+                        # Get the status for this SFP port
+                        sfp_status = self.port_status_map.get(sfp_num, PortStatus.UP)
+                        indicator_x = sfp_x + sfp_width - 5
+                        indicator_y = sfp_y + 5
+                        
+                        # Only show indicator if status is not UP
+                        if sfp_status != PortStatus.UP:
+                            svg.append(f'    <circle cx="{indicator_x}" cy="{indicator_y}" r="3" '
+                                      f'fill="{self.STATUS_COLORS[sfp_status]}" stroke="white" stroke-width="0.5" />')
+                    
+                    # Close the SFP port group
+                    svg.append(f'  </g>')
         return svg
 
     def generate_svg(self) -> str:
