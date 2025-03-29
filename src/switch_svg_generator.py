@@ -120,7 +120,7 @@ class SwitchSVGGenerator:
         theme: Theme = Theme.DARK,
         port_shape: PortShape = PortShape.ROUNDED,
         show_status_indicator: bool = True,
-        sfp_ports: int = 0,  # Number of SFP ports (0-6)
+        sfp_ports: int = 0,  # Number of SFP ports (0-6 in normal mode, 4-32 in SFP-only mode)
         sfp_layout: str = "zigzag",  # Options: "horizontal" or "zigzag"
         sfp_group_size: int = 0,  # Number of SFP ports per group (0 means no grouping)
         switch_body_color: Optional[str] = None,  # Custom color for the switch body
@@ -128,6 +128,7 @@ class SwitchSVGGenerator:
         switch_body_border_width: int = 2,  # Border width for the switch body
         port_group_size: int = 0,  # Number of ports per group (0 means no grouping)
         port_group_spacing: int = 7,  # Additional spacing between port groups in pixels
+        sfp_only_mode: bool = False,  # When True, creates a switch with only SFP ports
     ):
         """
         Initialize the switch SVG generator.
@@ -149,19 +150,28 @@ class SwitchSVGGenerator:
             theme: Color theme to use (dark or light)
             port_shape: Shape of the ports (square, rounded, circular)
             show_status_indicator: Whether to show port status indicators
-            sfp_ports: Number of SFP ports to add (0-6)
+            sfp_ports: Number of SFP ports to add (0-6 in normal mode, 4-32 in SFP-only mode)
+            sfp_only_mode: When True, creates a switch with only SFP ports (no regular ports)
         """
-        # Validate inputs
-        if not 5 <= num_ports <= 48:
-            raise ValueError("Number of ports must be between 5 and 48")
+        # Validate inputs based on mode
+        self.sfp_only_mode = sfp_only_mode
         
-        if sfp_ports < 0 or sfp_ports > 6:
-            raise ValueError("Number of SFP ports must be between 0 and 6")
+        if sfp_only_mode:
+            # In SFP-only mode, validate SFP ports
+            if not 4 <= sfp_ports <= 32:
+                raise ValueError("In SFP-only mode, number of SFP ports must be between 4 and 32")
+            # Set num_ports to 0 since we're not using regular ports
+            self.num_ports = 0
+        else:
+            # Normal mode validation
+            if not 5 <= num_ports <= 48:
+                raise ValueError("Number of ports must be between 5 and 48")
+            if sfp_ports < 0 or sfp_ports > 6:
+                raise ValueError("Number of SFP ports must be between 0 and 6")
+            self.num_ports = num_ports
         
         if port_group_size < 0:
             raise ValueError("Port group size must be non-negative")
-        
-        self.num_ports = num_ports
         self.switch_width = max(switch_width, 400)  # Minimum width
         self.switch_height = max(switch_height, 150)  # Minimum height
         self.port_width = max(port_width, 10)  # Minimum port width
@@ -177,10 +187,14 @@ class SwitchSVGGenerator:
         self.vlan_colors = vlan_colors or self.DEFAULT_VLAN_COLORS.copy()
         
         # Default port to VLAN mapping (all ports on VLAN 1 by default)
-        self.port_vlan_map = port_vlan_map or {i: 1 for i in range(1, num_ports + 1)}
-        
-        # Default port status (all ports up by default)
-        self.port_status_map = port_status_map or {i: PortStatus.UP for i in range(1, num_ports + 1)}
+        if sfp_only_mode:
+            # In SFP-only mode, only create mappings for SFP ports
+            self.port_vlan_map = port_vlan_map or {i: 1 for i in range(1, sfp_ports + 1)}
+            self.port_status_map = port_status_map or {i: PortStatus.UP for i in range(1, sfp_ports + 1)}
+        else:
+            # Normal mode - create mappings for all ports
+            self.port_vlan_map = port_vlan_map or {i: 1 for i in range(1, num_ports + 1)}
+            self.port_status_map = port_status_map or {i: PortStatus.UP for i in range(1, num_ports + 1)}
         
         # Port labels (empty by default)
         self.port_labels = port_labels or {}
@@ -188,7 +202,11 @@ class SwitchSVGGenerator:
         self.output_file = output_file
         self.switch_model = switch_model
         self.model_name = model_name or switch_model.value  # Use custom model name or default to enum value
-        self.switch_name = switch_name or f"{num_ports}-Port Network Switch"
+        # Set switch name based on mode
+        if sfp_only_mode:
+            self.switch_name = switch_name or f"{sfp_ports}-Port SFP Switch"
+        else:
+            self.switch_name = switch_name or f"{num_ports}-Port Network Switch"
         self.theme = theme
         self.port_shape = port_shape
         self.show_status_indicator = show_status_indicator
@@ -365,17 +383,24 @@ class SwitchSVGGenerator:
             Tuple of (adjusted_width, adjusted_height, ports_per_row, num_rows)
         """
         # Calculate port positioning
-        ports_per_row = min(self.num_ports, 24)  # Use 24 ports per row max
-        num_rows = (self.num_ports + ports_per_row - 1) // ports_per_row
-        
-        # Calculate space needed for ports
-        row_spacing = 4  # Reduced from 6px to 4px for more compact layout
-        
-        # For zigzag pattern, we need half as many rows (rounded up)
-        if self.num_ports > 1:
-            num_rows = (self.num_ports + 1) // 2  # Ceiling division for odd number of ports
-        
-        ports_height = num_rows * (self.port_height + row_spacing)
+        if self.sfp_only_mode:
+            # In SFP-only mode, there are no regular ports
+            ports_per_row = 0
+            num_rows = 0
+            ports_height = 0
+        else:
+            # Normal mode - calculate regular port layout
+            ports_per_row = min(self.num_ports, 24)  # Use 24 ports per row max
+            num_rows = (self.num_ports + ports_per_row - 1) // ports_per_row
+            
+            # Calculate space needed for ports
+            row_spacing = 4  # Reduced from 6px to 4px for more compact layout
+            
+            # For zigzag pattern, we need half as many rows (rounded up)
+            if self.num_ports > 1:
+                num_rows = (self.num_ports + 1) // 2  # Ceiling division for odd number of ports
+            
+            ports_height = num_rows * (self.port_height + row_spacing)
         
         # Calculate space needed for header (switch name, model, etc.)
         header_height = 40  # Reduced from 50
@@ -395,26 +420,33 @@ class SwitchSVGGenerator:
         start_spacing = 30  # Space from start of switch to first port (actual spacing is 20px from edge)
         left_edge_spacing = 20  # Actual spacing from left edge to first port
         end_spacing = left_edge_spacing  # Space from last port to right edge (matching left spacing)
-        sfp_spacing = 20    # Space between last regular port and first SFP port
+        sfp_spacing = 20    # Space between last regular port and first SFP port (not used in SFP-only mode)
         
-        # Calculate how many columns we need for regular ports
-        # For zigzag pattern, we need half as many columns
-        regular_port_columns = (self.num_ports + 1) // 2  # Ceiling division for odd number of ports
+        # Calculate dimensions based on mode
+        if self.sfp_only_mode:
+            # In SFP-only mode, there are no regular ports
+            regular_port_columns = 0
+            regular_ports_width = 0
+            port_grouping_extra_width = 0
+        else:
+            # Normal mode - calculate regular port layout
+            # For zigzag pattern, we need half as many columns
+            regular_port_columns = (self.num_ports + 1) // 2  # Ceiling division for odd number of ports
+            
+            # Calculate width needed for port grouping if enabled
+            port_grouping_extra_width = 0
+            if self.port_group_size > 0 and regular_port_columns > 0:
+                # Calculate how many groups we have
+                num_groups = (regular_port_columns + self.port_group_size - 1) // self.port_group_size
+                # Calculate extra spacing from grouping
+                port_grouping_extra_width = (num_groups - 1) * self.port_group_spacing if num_groups > 1 else 0
+            
+            # Calculate width needed for the actual number of ports
+            # For regular ports, we need columns * (width + spacing)
+            regular_ports_width = (regular_port_columns * (self.port_width + self.port_spacing)) + port_grouping_extra_width
         
         # Calculate how many columns we need for SFP ports
         sfp_columns = (self.sfp_ports + 1) // 2  # Ceiling division to get number of columns
-        
-        # Calculate width needed for port grouping if enabled
-        port_grouping_extra_width = 0
-        if self.port_group_size > 0 and regular_port_columns > 0:
-            # Calculate how many groups we have
-            num_groups = (regular_port_columns + self.port_group_size - 1) // self.port_group_size
-            # Calculate extra spacing from grouping
-            port_grouping_extra_width = (num_groups - 1) * self.port_group_spacing if num_groups > 1 else 0
-        
-        # Calculate width needed for the actual number of ports
-        # For regular ports, we need columns * (width + spacing)
-        regular_ports_width = (regular_port_columns * (self.port_width + self.port_spacing)) + port_grouping_extra_width
         
         # For SFP ports, calculate width based on layout
         if self.sfp_layout == "horizontal":
@@ -436,8 +468,12 @@ class SwitchSVGGenerator:
                 sfp_ports_width = (sfp_columns * 40) + ((sfp_columns - 1) * self.port_spacing)
         
         # Calculate the position of the last port
-        if self.sfp_ports > 0:
-            # If there are SFP ports, the last port is the last SFP port
+        if self.sfp_only_mode:
+            # In SFP-only mode, the first port is the first SFP port
+            last_port_x = start_spacing
+            last_port_width = sfp_ports_width  # Total width of SFP ports
+        elif self.sfp_ports > 0:
+            # If there are SFP ports in normal mode, the last port is the last SFP port
             last_port_x = start_spacing + regular_ports_width + sfp_spacing
             last_port_width = sfp_ports_width  # Total width of SFP ports
         else:
@@ -471,15 +507,24 @@ class SwitchSVGGenerator:
         # Store the width needed for ports for later use in port positioning
         self.ports_width = actual_width - start_spacing - end_spacing
         
-        # Calculate minimum width based on 10 normal ports and 1 SFP port
-        min_normal_ports = 10
-        min_sfp_ports = 1
-        
-        # For normal ports in zigzag pattern (5 columns)
-        min_normal_width = start_spacing + (min_normal_ports // 2) * (self.port_width + self.port_spacing)
-        
-        # For SFP ports
-        min_sfp_width = sfp_spacing + 40  # 40px is the width of an SFP port
+        # Calculate minimum width based on mode
+        if self.sfp_only_mode:
+            # In SFP-only mode, minimum is based on 4 SFP ports
+            min_sfp_ports = 4
+            min_normal_ports = 0  # No normal ports in SFP-only mode
+            # For SFP ports in zigzag pattern (2 columns)
+            min_sfp_width = start_spacing + (min_sfp_ports // 2) * (40 + self.port_spacing)
+            min_normal_width = 0
+        else:
+            # Normal mode - minimum based on 10 normal ports and 1 SFP port
+            min_normal_ports = 10
+            min_sfp_ports = 1
+            
+            # For normal ports in zigzag pattern (5 columns)
+            min_normal_width = start_spacing + (min_normal_ports // 2) * (self.port_width + self.port_spacing)
+            
+            # For SFP ports
+            min_sfp_width = sfp_spacing + 40  # 40px is the width of an SFP port
         
         # Calculate minimum actual width
         min_actual_width = min_normal_width + min_sfp_width
@@ -507,25 +552,50 @@ class SwitchSVGGenerator:
         # This ensures the canvas width matches the switch body width plus margins
         adjusted_width = self.actual_body_width
         
-        # Ensure the adjusted width is at least the minimum width for a 10-port switch with 1 SFP
-        if self.num_ports < min_normal_ports or (self.num_ports == min_normal_ports and self.sfp_ports < min_sfp_ports):
-            # Calculate the minimum width for a 10-port switch with 1 SFP
-            # Calculate the exact width needed for a 10-port switch with 1 SFP
-            min_body_width = min_normal_width + min_sfp_width
-            min_switch_width = min_body_width + 20  # Add 20px for margins
-            
-            # Force the width to be exactly the minimum width
-            adjusted_width = 280  # Hardcoded width for 10 ports + 1 SFP
-            
-            # Also update the body width to match
-            self.body_width = 260  # Hardcoded body width for 10 ports + 1 SFP
+        # Ensure the adjusted width is at least the minimum width
+        if self.sfp_only_mode:
+            # For SFP-only mode, ensure minimum width for 4 SFP ports
+            if self.sfp_ports < min_sfp_ports:
+                # Calculate the minimum width for 4 SFP ports
+                min_body_width = min_sfp_width
+                min_switch_width = min_body_width + 20  # Add 20px for margins
+                
+                # Force the width to be exactly the minimum width
+                adjusted_width = 280  # Hardcoded width for 4 SFP ports
+                
+                # Also update the body width to match
+                self.body_width = 260  # Hardcoded body width for 4 SFP ports
+        else:
+            # For normal mode, ensure minimum width for 10 normal ports + 1 SFP
+            if self.num_ports < min_normal_ports or (self.num_ports == min_normal_ports and self.sfp_ports < min_sfp_ports):
+                # Calculate the minimum width for a 10-port switch with 1 SFP
+                # Calculate the exact width needed for a 10-port switch with 1 SFP
+                min_body_width = min_normal_width + min_sfp_width
+                min_switch_width = min_body_width + 20  # Add 20px for margins
+                
+                # Force the width to be exactly the minimum width
+                adjusted_width = 280  # Hardcoded width for 10 ports + 1 SFP
+                
+                # Also update the body width to match
+                self.body_width = 260  # Hardcoded body width for 10 ports + 1 SFP
         
         # Calculate height needed for SFP ports if any
         sfp_height = 0
         if self.sfp_ports > 0:
-            # SFP ports are taller, so check if they need more height than regular ports
-            sfp_height = self.sfp_ports * 40 + (self.sfp_ports - 1) * 10  # 40px height, 10px spacing
-            ports_height = max(ports_height, sfp_height)
+            if self.sfp_layout == "horizontal":
+                # For horizontal layout, height is just one row
+                sfp_height = 40  # 40px height for one row
+            else:
+                # For zigzag layout, calculate based on number of rows
+                sfp_rows = (self.sfp_ports + 1) // 2  # Ceiling division for odd number of ports
+                sfp_height = sfp_rows * 40 + (sfp_rows - 1) * 10  # 40px height, 10px spacing
+            
+            # In SFP-only mode, ports_height is just the SFP height
+            # In normal mode, use the maximum of regular ports height and SFP height
+            if self.sfp_only_mode:
+                ports_height = sfp_height
+            else:
+                ports_height = max(ports_height, sfp_height)
         
         # Use the provided switch_height for the switch body
         adjusted_height = self.switch_height
@@ -889,7 +959,7 @@ class SwitchSVGGenerator:
         # Define spacing constants
         start_spacing = 30  # Space from start of switch to first port
         end_spacing = 30    # Space from last SFP port to end of switch
-        sfp_spacing = 20    # Space between last regular port and first SFP port
+        sfp_spacing = 20    # Space between last regular port and first SFP port (not used in SFP-only mode)
         
         # Use the original left spacing (30px)
         start_x = start_spacing
@@ -899,85 +969,88 @@ class SwitchSVGGenerator:
         # Model info would be at y=60, so start at y=70 (10px below)
         start_y = 70
         
-        # Generate regular RJ45 ports in a zigzag pattern
+        # Track the current port number
         port_num = 1
-        row_spacing = 4  # Use the same row spacing as defined in calculate_dimensions
         
-        # Calculate how many columns we need
-        # For zigzag pattern, we need twice as many columns
-        ports_per_row = min(self.num_ports, 48)  # Allow up to 48 ports in zigzag (24 per row)
-        num_cols = (self.num_ports + 1) // 2  # Ceiling division for odd number of ports
-        
-        for i in range(self.num_ports):
-            if port_num > self.num_ports:
-                break
+        # Generate regular RJ45 ports in a zigzag pattern (skip in SFP-only mode)
+        if not self.sfp_only_mode:
+            row_spacing = 4  # Use the same row spacing as defined in calculate_dimensions
+            
+            # Calculate how many columns we need
+            # For zigzag pattern, we need twice as many columns
+            ports_per_row = min(self.num_ports, 48)  # Allow up to 48 ports in zigzag (24 per row)
+            num_cols = (self.num_ports + 1) // 2  # Ceiling division for odd number of ports
+            
+            for i in range(self.num_ports):
+                if port_num > self.num_ports:
+                    break
+                    
+                # Calculate row and column for zigzag pattern
+                # Even ports (1, 3, 5...) go in row 1, odd ports (2, 4, 6...) go in row 2
+                row = i % 2
+                col = i // 2
                 
-            # Calculate row and column for zigzag pattern
-            # Even ports (1, 3, 5...) go in row 1, odd ports (2, 4, 6...) go in row 2
-            row = i % 2
-            col = i // 2
-            
-            # Calculate position with port grouping if enabled
-            if self.port_group_size > 0 and col > 0:
-                # Calculate which group this port belongs to
-                # We need to use column number (not port number) for grouping
-                # since we're using a zigzag pattern
-                group_num = col // self.port_group_size
+                # Calculate position with port grouping if enabled
+                if self.port_group_size > 0 and col > 0:
+                    # Calculate which group this port belongs to
+                    # We need to use column number (not port number) for grouping
+                    # since we're using a zigzag pattern
+                    group_num = col // self.port_group_size
+                    
+                    # Add extra spacing between groups
+                    extra_spacing = group_num * self.port_group_spacing
+                    
+                    x = start_x + col * (self.port_width + self.port_spacing) + extra_spacing
+                else:
+                    # Standard spacing without grouping
+                    x = start_x + col * (self.port_width + self.port_spacing)
+                    
+                y = start_y + row * (self.port_height + row_spacing)
                 
-                # Add extra spacing between groups
-                extra_spacing = group_num * self.port_group_spacing
+                color = self.get_port_color(port_num)
                 
-                x = start_x + col * (self.port_width + self.port_spacing) + extra_spacing
-            else:
-                # Standard spacing without grouping
-                x = start_x + col * (self.port_width + self.port_spacing)
+                # Create port group with tooltip
+                port_label = self.port_labels.get(port_num, str(port_num))
+                status = self.port_status_map.get(port_num, PortStatus.UP)
+                vlan_id = self.port_vlan_map.get(port_num, 1)
                 
-            y = start_y + row * (self.port_height + row_spacing)
-            
-            color = self.get_port_color(port_num)
-            
-            # Create port group with tooltip
-            port_label = self.port_labels.get(port_num, str(port_num))
-            status = self.port_status_map.get(port_num, PortStatus.UP)
-            vlan_id = self.port_vlan_map.get(port_num, 1)
-            
-            tooltip = f"Port: {port_num}, Label: {port_label}, Status: {status.value}, VLAN: {vlan_id}"
-            
-            svg.append(f'  <g id="port-{port_num}">') 
-            svg.append(f'    <title>{tooltip}</title>')
-            
-            # Port rectangle
-            svg.append(f'    <rect x="{x}" y="{y}" width="{self.port_width}" height="{self.port_height}" '
-                      f'fill="{color}" stroke="#000000" stroke-width="1" '
-                      f'rx="{port_shape_attrs["rx"]}" ry="{port_shape_attrs["ry"]}" />')
-            
-            # Port label - centered inside the port rectangle
-            text_x = x + (self.port_width // 2)
-            text_y = y + (self.port_height // 2) + 4  # Adjusted to center vertically
-            svg.append(f'    <text x="{text_x}" y="{text_y}" font-family="Arial" font-size="10" '
-                      f'fill="white" text-anchor="middle" dominant-baseline="middle">{port_label}</text>')
-            
-            # Status indicator (small circle in corner if enabled)
-            if self.show_status_indicator:
-                indicator_x = x + self.port_width - 5
-                indicator_y = y + 5
-                # Use specific colors for each status
-                if status == PortStatus.UP:
-                    indicator_color = "#2ecc71"  # Green for UP
-                    stroke_color = "#000000"     # Black border
-                elif status == PortStatus.DOWN:
-                    indicator_color = "#e74c3c"  # Red for DOWN
-                    stroke_color = "#000000"     # Black border
-                else:  # DISABLED
-                    indicator_color = "#000000"  # Black for DISABLED
-                    stroke_color = "#000000"     # Black border
+                tooltip = f"Port: {port_num}, Label: {port_label}, Status: {status.value}, VLAN: {vlan_id}"
                 
-                svg.append(f'    <circle cx="{indicator_x}" cy="{indicator_y}" r="3" '
-                          f'fill="{indicator_color}" stroke="{stroke_color}" stroke-width="0.5" />')
-            
-            svg.append(f'  </g>')
-            
-            port_num += 1
+                svg.append(f'  <g id="port-{port_num}">') 
+                svg.append(f'    <title>{tooltip}</title>')
+                
+                # Port rectangle
+                svg.append(f'    <rect x="{x}" y="{y}" width="{self.port_width}" height="{self.port_height}" '
+                          f'fill="{color}" stroke="#000000" stroke-width="1" '
+                          f'rx="{port_shape_attrs["rx"]}" ry="{port_shape_attrs["ry"]}" />')
+                
+                # Port label - centered inside the port rectangle
+                text_x = x + (self.port_width // 2)
+                text_y = y + (self.port_height // 2) + 4  # Adjusted to center vertically
+                svg.append(f'    <text x="{text_x}" y="{text_y}" font-family="Arial" font-size="10" '
+                          f'fill="white" text-anchor="middle" dominant-baseline="middle">{port_label}</text>')
+                
+                # Status indicator (small circle in corner if enabled)
+                if self.show_status_indicator:
+                    indicator_x = x + self.port_width - 5
+                    indicator_y = y + 5
+                    # Use specific colors for each status
+                    if status == PortStatus.UP:
+                        indicator_color = "#2ecc71"  # Green for UP
+                        stroke_color = "#000000"     # Black border
+                    elif status == PortStatus.DOWN:
+                        indicator_color = "#e74c3c"  # Red for DOWN
+                        stroke_color = "#000000"     # Black border
+                    else:  # DISABLED
+                        indicator_color = "#000000"  # Black for DISABLED
+                        stroke_color = "#000000"     # Black border
+                    
+                    svg.append(f'    <circle cx="{indicator_x}" cy="{indicator_y}" r="3" '
+                              f'fill="{indicator_color}" stroke="{stroke_color}" stroke-width="0.5" />')
+                
+                svg.append(f'  </g>')
+                
+                port_num += 1
         
         # Generate SFP ports if requested
         if self.sfp_ports > 0:
@@ -1007,8 +1080,13 @@ class SwitchSVGGenerator:
             # Calculate the total width available for ports (adjusted_width minus margins)
             available_width = adjusted_width - 2 * 10  # 10px margin on each side
             
-            # Position SFP ports right after the last regular port with sfp_spacing
-            sfp_start_x = last_port_x + self.port_width + sfp_spacing
+            # Position SFP ports based on mode
+            if self.sfp_only_mode:
+                # In SFP-only mode, start SFP ports at the same position as regular ports would
+                sfp_start_x = start_x
+            else:
+                # In normal mode, position SFP ports right after the last regular port with sfp_spacing
+                sfp_start_x = last_port_x + self.port_width + sfp_spacing
             
             # Handle different SFP layouts
             if self.sfp_layout == "horizontal":

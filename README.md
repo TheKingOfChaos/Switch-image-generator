@@ -28,6 +28,7 @@ switch_grafic_generator/
 - Generate network switch SVG visualizations with different layouts:
   - Single row layout with up to 24 normal ports and 2 SFP ports
   - Double row (zigzag) layout with up to 48 normal ports and 6 SFP ports
+  - SFP-only mode with 4-32 SFP ports and no regular ports
 - Flexible SFP port layout options:
   - Zigzag layout (default) - SFP ports in a zigzag pattern (similar to regular ports)
   - Horizontal layout - All SFP ports in a single horizontal row
@@ -59,9 +60,9 @@ switch_grafic_generator/
 
 | Option | Description |
 |--------|-------------|
-| `--layout {single,double}` | Layout type: single for one row, double for two rows (zigzag) |
-| `--ports N` | Number of normal ports (1-24 for single, 1-48 for double) |
-| `--sfp N` | Number of SFP ports (0-2 for single, 0-6 for double) |
+| `--layout {single,double,sfp-only}` | Layout type: single for one row, double for two rows (zigzag), sfp-only for SFP ports only |
+| `--ports N` | Number of normal ports (1-24 for single, 1-48 for double, 0 for sfp-only) |
+| `--sfp N` | Number of SFP ports (0-2 for single, 0-6 for double, 4-32 for sfp-only) |
 | `--output FILENAME` | Output SVG filename |
 | `--name NAME` | Custom switch name |
 | `--theme {dark,light}` | Color theme (default: dark) |
