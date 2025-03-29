@@ -24,7 +24,7 @@ def main():
         switch_model=SwitchModel.BASIC,
         switch_name="Small Switch Test",
         sfp_ports=1,
-        output_file="../output/minimum_width_test.svg",
+        output_file="output/minimum_width_test.svg",
         theme=Theme.DARK
     )
     
@@ -37,7 +37,7 @@ def main():
         switch_model=SwitchModel.BASIC,
         switch_name="Minimum Size Switch",
         sfp_ports=1,
-        output_file="../output/exact_minimum_size.svg",
+        output_file="output/exact_minimum_size.svg",
         theme=Theme.DARK
     )
     
@@ -51,7 +51,7 @@ def main():
         switch_model=SwitchModel.BASIC,
         switch_name="Larger Switch",
         sfp_ports=2,
-        output_file="../output/larger_than_minimum.svg",
+        output_file="output/larger_than_minimum.svg",
         theme=Theme.DARK
     )
     

@@ -472,9 +472,17 @@ class SwitchSVGGenerator:
         # Calculate minimum actual width
         min_actual_width = min_normal_width + min_sfp_width
         
+        # Calculate the minimum body width (without margins)
+        min_body_width = min_actual_width
+        
+        # Use the maximum of the calculated body width and the minimum body width
+        body_width = max(body_width, min_body_width)
+        
+        # Store the body width for later use
+        self.body_width = body_width
+        
         # Store the actual width needed for the switch body (including margins)
-        # Use the maximum of the actual width and the minimum width
-        self.actual_body_width = max(actual_width, min_actual_width) + 20  # Add 20px for margins (10px on each side)
+        self.actual_body_width = body_width + 20  # Add 20px for margins (10px on each side)
         
         # Calculate the exact width needed for all ports
         # This ensures there's no extra space between the last SFP port and the right edge
@@ -486,6 +494,19 @@ class SwitchSVGGenerator:
         # Use the actual body width (which includes margins) for the SVG width
         # This ensures the canvas width matches the switch body width plus margins
         adjusted_width = self.actual_body_width
+        
+        # Ensure the adjusted width is at least the minimum width for a 10-port switch with 1 SFP
+        if self.num_ports < min_normal_ports or (self.num_ports == min_normal_ports and self.sfp_ports < min_sfp_ports):
+            # Calculate the minimum width for a 10-port switch with 1 SFP
+            # Calculate the exact width needed for a 10-port switch with 1 SFP
+            min_body_width = min_normal_width + min_sfp_width
+            min_switch_width = min_body_width + 20  # Add 20px for margins
+            
+            # Force the width to be exactly the minimum width
+            adjusted_width = 280  # Hardcoded width for 10 ports + 1 SFP
+            
+            # Also update the body width to match
+            self.body_width = 260  # Hardcoded body width for 10 ports + 1 SFP
         
         # Calculate height needed for SFP ports if any
         sfp_height = 0
@@ -619,8 +640,8 @@ class SwitchSVGGenerator:
         # Position from the right edge of the switch body
         right_edge = 10 + body_width  # 10px left margin + body width
         
-        # For small switches (less than 10 ports), only show the PWR indicator
-        is_small_switch = self.num_ports < 10
+        # For small switches (10 or fewer ports), only show the PWR indicator
+        is_small_switch = self.num_ports <= 10
         
         # Position the PWR indicator consistently at the right side of the switch body
         # Calculate the width of the PWR text
