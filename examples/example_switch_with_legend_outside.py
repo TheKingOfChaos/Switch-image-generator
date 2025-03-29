@@ -21,8 +21,7 @@ switch = SwitchSVGGenerator(
     switch_model=SwitchModel.ENTERPRISE,
     switch_name="Switch with Legend Outside",
     theme=Theme.LIGHT,  # Light theme (light gray background and black text)
-    sfp_ports=4,
-    legend_position="outside"  # Place legend outside and below the switch
+    sfp_ports=4
 )
 
 # Generate and save the SVG

@@ -9,10 +9,12 @@ switch_grafic_generator/
 ├── src/                  # Source code
 │   ├── switch_svg_generator.py         # Base generator class
 │   ├── single_row_switch_generator.py  # Single row layout generator
-│   └── configurable_switch_generator.py # Configurable generator with CLI
+│   ├── configurable_switch_generator.py # Configurable generator with CLI
+│   └── generate_switch.py              # Internal entry point
 ├── examples/             # Example scripts
 │   ├── create_single_row_switch.py     # Example of single row switch
-│   ├── one_row_switch_with_sfp.py      # Example using base generator
+│   ├── create_sfp_only_switch.py       # Example of SFP-only switch
+│   ├── test_normal_switch.py           # Example of normal switch
 │   └── ...                             # Other examples
 ├── docs/                 # Documentation
 │   ├── README.md                       # Original README
@@ -20,7 +22,11 @@ switch_grafic_generator/
 │   └── SINGLE_ROW_SWITCH_README.md     # Single row switch documentation
 ├── output/               # Generated SVG files
 │   └── ...                             # SVG output files
-└── generate_switch.py    # Main script
+├── tests/                # Test scripts
+│   └── ...                             # Test files
+├── tools/                # Utility scripts
+│   └── ...                             # Tool files
+└── generate_switch.py    # Main script (entry point)
 ```
 
 ## Features
@@ -51,6 +57,9 @@ switch_grafic_generator/
 
 # Generate a double row switch with 48 normal ports and 6 SFP ports
 ./generate_switch.py --layout double --ports 48 --sfp 6
+
+# Generate an SFP-only switch with 8 SFP ports
+./generate_switch.py --layout sfp-only --sfp 8
 
 # Use interactive mode for guided configuration
 ./generate_switch.py --interactive

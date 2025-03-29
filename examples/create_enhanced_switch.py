@@ -8,7 +8,7 @@ import sys
 import os
 
 # Add the project root directory to the Python path
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.switch_svg_generator import SwitchSVGGenerator, Theme, SwitchModel, PortStatus
 
@@ -55,7 +55,6 @@ def create_enhanced_switch(theme=Theme.DARK):
         port_vlan_map=port_vlan_map,
         port_status_map=port_status_map,
         port_labels=port_labels,
-        legend_position="outside",
         legend_spacing=30  # Increase spacing between switch and legend for better visibility
     )
     

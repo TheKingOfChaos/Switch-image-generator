@@ -67,7 +67,6 @@ def main():
         switch_name="Custom Data Center Switch",
         sfp_ports=2,  # 2 SFP ports
         output_file="custom_single_row_switch.svg",
-        legend_position="outside",  # Place legend outside
         theme=Theme.LIGHT,  # Light theme
         port_vlan_map=port_vlan_map,
         port_status_map=port_status_map,

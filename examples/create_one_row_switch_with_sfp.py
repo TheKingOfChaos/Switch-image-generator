@@ -26,7 +26,6 @@ def main():
         switch_name="24-Port Switch with SFP",
         sfp_ports=2,  # Add 2 SFP ports as requested
         output_file="output/one_row_switch_with_sfp.svg",
-        legend_position="outside",  # Place legend outside for cleaner appearance
         theme=Theme.DARK,  # Dark theme for better contrast
         # Optional: Add custom port labels for the SFP ports
         port_labels={

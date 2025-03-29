@@ -6,7 +6,21 @@ This script extends the SwitchSVGGenerator to create a switch with ports in a si
 rather than the default zigzag pattern.
 """
 
-from .switch_svg_generator import SwitchSVGGenerator, SwitchModel, Theme, PortStatus
+import sys
+import os
+
+# Add the current directory to the Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
+sys.path.insert(0, os.path.dirname(current_dir))  # Add parent directory too
+
+# Try different import approaches to handle both direct and relative imports
+try:
+    # Try direct import first (when run from project root)
+    from src.switch_svg_generator import SwitchSVGGenerator, SwitchModel, Theme, PortStatus
+except ImportError:
+    # Fall back to regular import (when src is in path)
+    from switch_svg_generator import SwitchSVGGenerator, SwitchModel, Theme, PortStatus
 
 class SingleRowSwitchGenerator(SwitchSVGGenerator):
     """Extended generator that places all ports in a single row."""
