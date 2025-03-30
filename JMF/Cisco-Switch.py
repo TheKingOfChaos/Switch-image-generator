@@ -94,8 +94,8 @@ def main():
         vlan_colors=vlan_colors,
         sfp_ports=2,  # Add 2 SFP ports
         output_file="output/enterprise_switch.svg",
-        #sfp_layout="horizontal",
-        legend_items_spacing=6,  # Spacing between legend title and items
+        sfp_layout="horizontal",
+        legend_items_spacing=10,  # Spacing between legend title and items
         legend_item_padding=3,  # Use negative padding to reduce space between items
         switch_width=exact_width  # Use the exact width needed for the ports
     )

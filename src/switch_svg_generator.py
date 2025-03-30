@@ -107,7 +107,7 @@ class SwitchSVGGenerator:
         port_height: int = 28,
         port_spacing: int = 4,
         legend_spacing: int = 20,  # Spacing between switch body and legend title
-        legend_items_spacing: int = 10,  # Spacing between legend title and legend items
+        legend_items_spacing: int = 8,  # Spacing between legend title and legend items
         legend_item_padding: int = 3,  # Padding between legend items (horizontal spacing)
         vlan_colors: Optional[Dict[int, str]] = None,
         port_vlan_map: Optional[Dict[int, int]] = None,
@@ -117,8 +117,8 @@ class SwitchSVGGenerator:
         switch_model: SwitchModel = SwitchModel.BASIC,
         model_name: str = "",  # Custom model name to display on the switch
         switch_name: str = "",
-        theme: Theme = Theme.DARK,
-        port_shape: PortShape = PortShape.ROUNDED,
+        theme: Theme = Theme.LIGHT,
+        port_shape: PortShape = PortShape.SQUARE,
         show_status_indicator: bool = True,
         sfp_ports: int = 0,  # Number of SFP ports (0-6 in normal mode, 4-32 in SFP-only mode)
         sfp_layout: str = "zigzag",  # Options: "horizontal" or "zigzag"
@@ -792,8 +792,13 @@ class SwitchSVGGenerator:
         svg.append(f'  <text x="{legend_x}" y="{legend_title_y}" font-family="Arial" '
                   f'font-size="12" font-weight="bold" fill="{self.theme_colors["text"]}">Legend:</text>')
         
-        # Position legend items exactly legend_items_spacing pixels below the legend title
-        legend_items_y = legend_title_y + self.legend_items_spacing
+        # Position VLAN section title below the legend title with additional 3px spacing
+        vlan_section_y = legend_title_y + self.legend_items_spacing + 3  # Added 3px extra spacing
+        svg.append(f'  <text x="{legend_x}" y="{vlan_section_y}" font-family="Arial" '
+                  f'font-size="11" font-weight="bold" fill="{self.theme_colors["text"]}">VLANs:</text>')
+        
+        # Position legend items below the VLAN section title
+        legend_items_y = vlan_section_y + self.legend_items_spacing
         
         # Debug logging to help diagnose spacing issues
         logger.info(f"Legend spacing: title_y={legend_title_y}, items_y={legend_items_y}, spacing={self.legend_items_spacing}")
@@ -895,8 +900,13 @@ class SwitchSVGGenerator:
         
         # Add status items on a new row if there are any
         if status_items:
-            # Position status items on a new row
-            status_y = row_y + 25
+            # Position status section title on a new row
+            status_section_y = row_y + 25
+            svg.append(f'  <text x="{legend_x}" y="{status_section_y}" font-family="Arial" '
+                      f'font-size="11" font-weight="bold" fill="{self.theme_colors["text"]}">Port Status:</text>')
+            
+            # Position status items below the status section title
+            status_y = status_section_y + self.legend_items_spacing
             
             # Calculate status item widths
             status_item_widths = []
