@@ -108,27 +108,27 @@ See `example_usage.py` for more detailed examples.
 
 ## Command Line Options
 
-| Option | Description |
-|--------|-------------|
-| `--ports` | Number of ports (default: 24) |
-| `--output` | Output file path (default: switch.svg) |
-| `--name` | Custom name for the switch |
-| `--port-vlan` | Port-VLAN mappings in format "port:vlan" (e.g., "1:10" "2:20") |
-| `--port-status` | Port-Status mappings in format "port:status" (e.g., "1:up" "2:down") |
-| `--port-label` | Port-Label mappings in format "port:label" (e.g., "1:WAN" "2:LAN1") |
-| `--vlan-color` | VLAN-Color mappings in format "vlan:#RRGGBB" (e.g., "10:#FF0000") |
-| `--model` | Switch model type: basic, enterprise, data_center, stackable |
-| `--theme` | Color theme: dark, light |
-| `--port-shape` | Port shape: square, rounded, circular |
-| `--legend-position` | Legend position: inside, outside |
-| `--legend-spacing` | Spacing between switch body and legend title in pixels |
-| `--legend-items-spacing` | Spacing between legend title and legend items in pixels |
-| `--switch-body-color` | Custom color for the switch body (e.g., "#4a86e8") |
-| `--switch-body-border-color` | Border color for the switch body (default: black) |
-| `--switch-body-border-width` | Border width for the switch body in pixels (default: 2) |
-| `--hide-status-indicator` | Hide port status indicators |
-| `--preview` | Open the generated SVG in a web browser |
-| `--verbose` | Enable verbose logging |
+| Option                        | Description                                                          |
+|-------------------------------|----------------------------------------------------------------------|
+| `--ports`                     | Number of ports (default: 24)                                        |
+| `--output`                    | Output file path (default: switch.svg)                               |
+| `--name`                      | Custom name for the switch                                           |
+| `--port-vlan`                 | Port-VLAN mappings in format "port:vlan" (e.g., "1:10" "2:20")       |
+| `--port-status`               | Port-Status mappings in format "port:status" (e.g., "1:up" "2:down") |
+| `--port-label`                | Port-Label mappings in format "port:label" (e.g., "1:WAN" "2:LAN1")  |
+| `--vlan-color`                | VLAN-Color mappings in format "vlan:#RRGGBB" (e.g., "10:#FF0000")    |
+| `--model`                     | Switch model type: basic, enterprise, data_center, stackable         |
+| `--theme`                     | Color theme: dark, light                                             |
+| `--port-shape`                | Port shape: square, rounded, circular                                |
+| `--legend-position`           | Legend position: inside, outside                                     |
+| `--legend-spacing`            | Spacing between switch body and legend title in pixels               |
+| `--legend-items-spacing`      | Spacing between legend title and legend items in pixels              |
+| `--switch-body-color`         | Custom color for the switch body (e.g., "#4a86e8")                   |
+| `--switch-body-border-color`  | Border color for the switch body (default: black)                    |
+| `--switch-body-border-width`  | Border width for the switch body in pixels (default: 2)              |
+| `--hide-status-indicator`     | Hide port status indicators                                          |
+| `--preview`                   | Open the generated SVG in a web browser                              |
+| `--verbose`                   | Enable verbose logging                                               |
 
 ## Examples
 

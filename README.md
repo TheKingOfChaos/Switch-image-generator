@@ -67,15 +67,15 @@ switch_grafic_generator/
 
 ### Command-Line Options
 
-| Option | Description |
-|--------|-------------|
+| Option                           | Description                                                                           |
+|----------------------------------|---------------------------------------------------------------------------------------|
 | `--layout {single,double,sfp-only}` | Layout type: single for one row, double for two rows (zigzag), sfp-only for SFP ports only |
-| `--ports N` | Number of normal ports (1-24 for single, 1-48 for double, 0 for sfp-only) |
-| `--sfp N` | Number of SFP ports (0-2 for single, 0-6 for double, 4-32 for sfp-only) |
-| `--output FILENAME` | Output SVG filename |
-| `--name NAME` | Custom switch name |
-| `--theme {dark,light}` | Color theme (default: dark) |
-| `--interactive` | Run in interactive mode (prompts for input) |
+| `--ports N`                      | Number of normal ports (1-24 for single, 1-48 for double, 0 for sfp-only)            |
+| `--sfp N`                        | Number of SFP ports (0-2 for single, 0-6 for double, 4-32 for sfp-only)              |
+| `--output FILENAME`              | Output SVG filename                                                                   |
+| `--name NAME`                    | Custom switch name                                                                    |
+| `--theme {dark,light}`           | Color theme (default: dark)                                                           |
+| `--interactive`                  | Run in interactive mode (prompts for input)                                           |
 
 ## Examples
 
