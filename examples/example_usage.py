@@ -20,7 +20,7 @@ def main():
     # Example 1: Basic 24-port switch with default settings
     basic_switch = SwitchSVGGenerator(
         num_ports=24,
-        output_file="../output/basic_switch.svg"
+        output_file="output/basic_switch.svg"
     )
     basic_switch.save_svg()
     print("Created basic_switch.svg")
@@ -57,7 +57,7 @@ def main():
         port_vlan_map=port_vlan_map,
         port_status_map=port_status_map,
         port_labels=port_labels,
-        output_file="../output/enterprise_switch.svg"
+        output_file="output/enterprise_switch.svg"
     )
     enterprise_switch.save_svg()
     print("Created enterprise_switch.svg")
@@ -69,7 +69,7 @@ def main():
         switch_name="Data Center Switch",
         theme=Theme.LIGHT,
         port_shape=PortShape.CIRCULAR,
-        output_file="../output/data_center_switch.svg"
+        output_file="output/data_center_switch.svg"
     )
     data_center_switch.save_svg()
     print("Created data_center_switch.svg")
@@ -87,7 +87,7 @@ def main():
         switch_model=SwitchModel.STACKABLE,
         switch_name="Access Switch",
         vlan_colors=vlan_colors,
-        output_file="../output/stackable_switch.svg"
+        output_file="output/stackable_switch.svg"
     )
     stackable_switch.save_svg()
     print("Created stackable_switch.svg")
@@ -103,7 +103,7 @@ def main():
         switch_name="Edge Switch with SFP",
         sfp_ports=6,  # Add 6 SFP ports to show the zigzag pattern
         port_labels=sfp_port_labels,
-        output_file="../output/sfp_switch.svg"
+        output_file="output/sfp_switch.svg"
     )
     sfp_switch.save_svg()
     print("Created sfp_switch.svg")
