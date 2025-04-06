@@ -279,6 +279,51 @@ generator = SwitchSVGGenerator(
 | `port_group_size`       | int       | 0                | Number of ports per group (0 means no grouping)       |
 | `port_group_spacing`    | int       | 7                | Additional spacing between port groups in pixels      |
 | `show_status_indicator` | bool      | True             | Whether to show port status indicators                |
+| `port_start_number`     | int       | 1                | Starting port number (0 or 1)                         |
+| `zigzag_start_position` | str       | "top"            | First port position in zigzag pattern ("top" or "bottom") |
+
+
+#### Port Numbering Options
+
+The `port_start_number` parameter allows you to choose whether port numbering starts from 0 or 1:
+
+- `port_start_number=1` (default): Port numbering starts from 1 (1, 2, 3, ...) and SFP ports from SFP1
+- `port_start_number=0`: Port numbering starts from 0 (0, 1, 2, ...) and SFP ports from SFP0
+
+This affects the port labels displayed on the switch and is useful for different network equipment conventions.
+
+#### Zigzag Pattern Options
+
+The `zigzag_start_position` parameter controls whether the first port in a zigzag pattern is on the top or bottom row:
+
+- `zigzag_start_position="top"` (default): First port is on the top row, second port is on the bottom row, and so on
+- `zigzag_start_position="bottom"`: First port is on the bottom row, second port is on the top row, and so on
+
+This allows you to match the port layout of different switch models.
+
+#### Combining Port Numbering and Zigzag Options
+
+You can combine these options to create four different port configurations:
+
+1. Default: `port_start_number=1, zigzag_start_position="top"`
+   - Port numbering starts from 1
+   - First port (1) is on the top row
+   - Second port (2) is on the bottom row
+
+2. Start from 0: `port_start_number=0, zigzag_start_position="top"`
+   - Port numbering starts from 0
+   - First port (0) is on the top row
+   - Second port (1) is on the bottom row
+
+3. First port on bottom: `port_start_number=1, zigzag_start_position="bottom"`
+   - Port numbering starts from 1
+   - First port (1) is on the bottom row
+   - Second port (2) is on the top row
+
+4. Start from 0, first port on bottom: `port_start_number=0, zigzag_start_position="bottom"`
+   - Port numbering starts from 0
+   - First port (0) is on the bottom row
+   - Second port (1) is on the top row
 
 ### VLAN and Status Settings
 
@@ -570,6 +615,42 @@ generator = SwitchSVGGenerator(
 ## Examples Gallery
 
 Here are some examples of different switch configurations:
+
+### Port Numbering and Zigzag Pattern Options
+
+```python
+# Default: port_start_number=1, zigzag_start_position="top"
+generator = SwitchSVGGenerator(
+    num_ports=24,
+    port_start_number=1,
+    zigzag_start_position="top",
+    output_file="default_port_numbering.svg"
+)
+
+# Start from 0, first port on top
+generator = SwitchSVGGenerator(
+    num_ports=24,
+    port_start_number=0,
+    zigzag_start_position="top",
+    output_file="start_from_0.svg"
+)
+
+# Start from 1, first port on bottom
+generator = SwitchSVGGenerator(
+    num_ports=24,
+    port_start_number=1,
+    zigzag_start_position="bottom",
+    output_file="first_port_bottom.svg"
+)
+
+# Start from 0, first port on bottom
+generator = SwitchSVGGenerator(
+    num_ports=24,
+    port_start_number=0,
+    zigzag_start_position="bottom",
+    output_file="start_0_bottom.svg"
+)
+```
 
 ### Basic 24-port Switch
 

@@ -129,6 +129,8 @@ class SwitchSVGGenerator:
         port_group_size: int = 0,  # Number of ports per group (0 means no grouping)
         port_group_spacing: int = 7,  # Additional spacing between port groups in pixels
         sfp_only_mode: bool = False,  # When True, creates a switch with only SFP ports
+        port_start_number: int = 1,  # Starting port number (0 or 1)
+        zigzag_start_position: str = "top",  # First port position in zigzag pattern ("top" or "bottom")
     ):
         """
         Initialize the switch SVG generator.
@@ -152,9 +154,21 @@ class SwitchSVGGenerator:
             show_status_indicator: Whether to show port status indicators
             sfp_ports: Number of SFP ports to add (0-6 in normal mode, 4-32 in SFP-only mode)
             sfp_only_mode: When True, creates a switch with only SFP ports (no regular ports)
+            port_start_number: Starting port number (0 or 1)
+            zigzag_start_position: First port position in zigzag pattern ("top" or "bottom")
         """
         # Validate inputs based on mode
         self.sfp_only_mode = sfp_only_mode
+        
+        # Validate port_start_number
+        if port_start_number not in [0, 1]:
+            raise ValueError("port_start_number must be either 0 or 1")
+        self.port_start_number = port_start_number
+        
+        # Validate zigzag_start_position
+        if zigzag_start_position not in ["top", "bottom"]:
+            raise ValueError("zigzag_start_position must be either 'top' or 'bottom'")
+        self.zigzag_start_position = zigzag_start_position
         
         if sfp_only_mode:
             # In SFP-only mode, validate SFP ports
@@ -189,12 +203,12 @@ class SwitchSVGGenerator:
         # Default port to VLAN mapping (all ports on VLAN 1 by default)
         if sfp_only_mode:
             # In SFP-only mode, only create mappings for SFP ports
-            self.port_vlan_map = port_vlan_map or {i: 1 for i in range(1, sfp_ports + 1)}
-            self.port_status_map = port_status_map or {i: PortStatus.UP for i in range(1, sfp_ports + 1)}
+            self.port_vlan_map = port_vlan_map or {i: 1 for i in range(self.port_start_number, sfp_ports + self.port_start_number)}
+            self.port_status_map = port_status_map or {i: PortStatus.UP for i in range(self.port_start_number, sfp_ports + self.port_start_number)}
         else:
             # Normal mode - create mappings for all ports
-            self.port_vlan_map = port_vlan_map or {i: 1 for i in range(1, num_ports + 1)}
-            self.port_status_map = port_status_map or {i: PortStatus.UP for i in range(1, num_ports + 1)}
+            self.port_vlan_map = port_vlan_map or {i: 1 for i in range(self.port_start_number, num_ports + self.port_start_number)}
+            self.port_status_map = port_status_map or {i: PortStatus.UP for i in range(self.port_start_number, num_ports + self.port_start_number)}
         
         # Port labels (empty by default)
         self.port_labels = port_labels or {}
@@ -992,12 +1006,17 @@ class SwitchSVGGenerator:
             num_cols = (self.num_ports + 1) // 2  # Ceiling division for odd number of ports
             
             for i in range(self.num_ports):
-                if port_num > self.num_ports:
+                # Make sure we generate exactly num_ports ports, regardless of port_start_number
+                if i >= self.num_ports:
                     break
                     
-                # Calculate row and column for zigzag pattern
-                # Even ports (1, 3, 5...) go in row 1, odd ports (2, 4, 6...) go in row 2
-                row = i % 2
+                # Calculate row and column for zigzag pattern based on zigzag_start_position
+                if self.zigzag_start_position == "top":
+                    # Even ports (0, 2, 4...) go in row 0 (top), odd ports (1, 3, 5...) go in row 1 (bottom)
+                    row = i % 2
+                else:  # "bottom"
+                    # Even ports (0, 2, 4...) go in row 1 (bottom), odd ports (1, 3, 5...) go in row 0 (top)
+                    row = (i + 1) % 2
                 col = i // 2
                 
                 # Calculate position with port grouping if enabled
@@ -1020,7 +1039,9 @@ class SwitchSVGGenerator:
                 color = self.get_port_color(port_num)
                 
                 # Create port group with tooltip
-                port_label = self.port_labels.get(port_num, str(port_num))
+                # Adjust the displayed port number based on port_start_number
+                display_port_num = i + self.port_start_number
+                port_label = self.port_labels.get(port_num, str(display_port_num))
                 status = self.port_status_map.get(port_num, PortStatus.UP)
                 vlan_id = self.port_vlan_map.get(port_num, 1)
                 
@@ -1122,7 +1143,7 @@ class SwitchSVGGenerator:
                 
                 # Position SFP ports in a single row
                 for i in range(self.sfp_ports):
-                    sfp_num = self.num_ports + i + 1
+                    sfp_num = self.num_ports + i + self.port_start_number
                     
                     # Calculate position with SFP port grouping if enabled
                     if self.sfp_group_size > 0 and i > 0:
@@ -1144,7 +1165,7 @@ class SwitchSVGGenerator:
                     sfp_color = self.get_port_color(sfp_num)
                     
                     # Create SFP port group with tooltip
-                    sfp_label = self.port_labels.get(sfp_num, f"SFP{i+1}")
+                    sfp_label = self.port_labels.get(sfp_num, f"SFP{i}")
                     vlan_id = self.port_vlan_map.get(sfp_num, 1)
                     
                     tooltip = f"SFP Port: {sfp_num}, Label: {sfp_label}, VLAN: {vlan_id}"
@@ -1202,11 +1223,15 @@ class SwitchSVGGenerator:
                 
                 # Position SFP ports in a zigzag pattern
                 for i in range(self.sfp_ports):
-                    sfp_num = self.num_ports + i + 1
+                    sfp_num = self.num_ports + i + self.port_start_number
                     
-                    # Calculate row and column for zigzag pattern
-                    # Even ports (0, 2, 4...) go in row 1, odd ports (1, 3, 5...) go in row 2
-                    row = i % 2
+                    # Calculate row and column for zigzag pattern based on zigzag_start_position
+                    if self.zigzag_start_position == "top":
+                        # Even ports (0, 2, 4...) go in row 0 (top), odd ports (1, 3, 5...) go in row 1 (bottom)
+                        row = i % 2
+                    else:  # "bottom"
+                        # Even ports (0, 2, 4...) go in row 1 (bottom), odd ports (1, 3, 5...) go in row 0 (top)
+                        row = (i + 1) % 2
                     col = i // 2
                     
                     # Calculate position with SFP port grouping if enabled
@@ -1229,7 +1254,9 @@ class SwitchSVGGenerator:
                     sfp_color = self.get_port_color(sfp_num)
                     
                     # Create SFP port group with tooltip
-                    sfp_label = self.port_labels.get(sfp_num, f"SFP{i+1}")
+                    # Adjust the displayed SFP port number based on port_start_number
+                    display_sfp_num = i + self.port_start_number
+                    sfp_label = self.port_labels.get(sfp_num, f"SFP{display_sfp_num}")
                     vlan_id = self.port_vlan_map.get(sfp_num, 1)
                     
                     tooltip = f"SFP Port: {sfp_num}, Label: {sfp_label}, VLAN: {vlan_id}"
