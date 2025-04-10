@@ -246,7 +246,8 @@ class SwitchSVGGenerator:
 
     def get_port_color(self, port_num: int) -> str:
         """
-        Get the color for a specific port based on its VLAN assignment and status.
+        Get the color for a specific port based on its VLAN assignment.
+        Always uses VLAN color regardless of port status.
         
         Args:
             port_num: The port number
@@ -254,12 +255,7 @@ class SwitchSVGGenerator:
         Returns:
             A color code string
         """
-        # If port is disabled or down, use status color
-        status = self.port_status_map.get(port_num, PortStatus.UP)
-        if status != PortStatus.UP:
-            return self.STATUS_COLORS[status]
-        
-        # Otherwise use VLAN color
+        # Always use VLAN color regardless of status
         vlan_id = self.port_vlan_map.get(port_num, 1)
         return self.vlan_colors.get(vlan_id, self.DEFAULT_VLAN_COLORS[1])
 
@@ -1189,10 +1185,9 @@ class SwitchSVGGenerator:
                         indicator_x = sfp_x + sfp_width - 5
                         indicator_y = sfp_y + 5
                         
-                        # Only show indicator if status is not UP
-                        if sfp_status != PortStatus.UP:
-                            svg.append(f'    <circle cx="{indicator_x}" cy="{indicator_y}" r="3" '
-                                      f'fill="{self.STATUS_COLORS[sfp_status]}" stroke="white" stroke-width="0.5" />')
+                        # Always show status indicator regardless of status
+                        svg.append(f'    <circle cx="{indicator_x}" cy="{indicator_y}" r="3" '
+                                  f'fill="{self.STATUS_COLORS[sfp_status]}" stroke="white" stroke-width="0.5" />')
                     
                     # Close the SFP port group
                     svg.append(f'  </g>')
@@ -1280,10 +1275,9 @@ class SwitchSVGGenerator:
                         indicator_x = sfp_x + sfp_width - 5
                         indicator_y = sfp_y + 5
                         
-                        # Only show indicator if status is not UP
-                        if sfp_status != PortStatus.UP:
-                            svg.append(f'    <circle cx="{indicator_x}" cy="{indicator_y}" r="3" '
-                                      f'fill="{self.STATUS_COLORS[sfp_status]}" stroke="white" stroke-width="0.5" />')
+                        # Always show status indicator regardless of status
+                        svg.append(f'    <circle cx="{indicator_x}" cy="{indicator_y}" r="3" '
+                                  f'fill="{self.STATUS_COLORS[sfp_status]}" stroke="white" stroke-width="0.5" />')
                     
                     # Close the SFP port group
                     svg.append(f'  </g>')
