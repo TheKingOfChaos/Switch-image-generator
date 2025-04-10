@@ -1,3 +1,6 @@
 JMF/
 __pycache__/
 /output/
+tests/output/
+examples/output/
+/tests/__pycache__/

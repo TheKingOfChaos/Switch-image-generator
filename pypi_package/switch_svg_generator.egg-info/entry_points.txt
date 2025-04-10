@@ -1,0 +1,2 @@
+[console_scripts]
+switch-svg-generator = switch_svg_generator.cli:main
