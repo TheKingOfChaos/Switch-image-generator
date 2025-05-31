@@ -2,7 +2,7 @@
 """
 Test Single Row Switch with SFP VLAN Colors
 -------------------------------------------
-This script tests the SingleRowSwitchGenerator with SFP ports using VLAN colors.
+This script tests the SwitchSVGGenerator with single row layout and SFP ports using VLAN colors.
 """
 
 import sys
@@ -11,7 +11,7 @@ import os
 # Add the src directory to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.single_row_switch_generator import SingleRowSwitchGenerator, PortStatus
+from src.switch_svg_generator import SwitchSVGGenerator, PortStatus, LayoutMode
 
 def main():
     """Create a single row switch with SFP ports using VLAN colors."""
@@ -47,14 +47,15 @@ def main():
     }
     
     # Create the single row switch
-    switch = SingleRowSwitchGenerator(
+    switch = SwitchSVGGenerator(
         num_ports=8,            # 8 regular ports
         sfp_ports=2,            # 2 SFP ports
         port_vlan_map=port_vlan_map,
         port_status_map=port_status_map,
         switch_name="Single Row Switch with SFP VLAN Colors",
         output_file="output/single_row_switch_with_sfp_vlan.svg",
-        show_status_indicator=True
+        show_status_indicator=True,
+        layout_mode=LayoutMode.SINGLE_ROW  # Use single row layout
     )
     
     # Generate and save the SVG

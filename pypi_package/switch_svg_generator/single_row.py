@@ -5,7 +5,7 @@ This module provides a specialized generator for single row switches.
 """
 
 from typing import Dict, Optional
-from .core import SwitchSVGGenerator, PortStatus, SwitchModel, Theme, PortShape
+from .core import SwitchSVGGenerator, PortStatus, SwitchModel, Theme, PortShape, LayoutMode
 
 
 class SingleRowSwitchGenerator(SwitchSVGGenerator):
@@ -14,6 +14,9 @@ class SingleRowSwitchGenerator(SwitchSVGGenerator):
     
     This class extends SwitchSVGGenerator to create a single row switch layout
     with up to 24 normal ports and 2 SFP ports.
+    
+    Note: This class is maintained for backward compatibility. New code should use
+    SwitchSVGGenerator with layout_mode=LayoutMode.SINGLE_ROW instead.
     """
     
     def __init__(
@@ -105,4 +108,5 @@ class SingleRowSwitchGenerator(SwitchSVGGenerator):
             sfp_only_mode=False,  # Never use SFP-only mode for single row
             port_start_number=port_start_number,
             zigzag_start_position="top",  # Not used in single row, but required
+            layout_mode=LayoutMode.SINGLE_ROW,  # Use single row layout
         )

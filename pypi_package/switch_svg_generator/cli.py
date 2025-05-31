@@ -11,8 +11,7 @@ import os
 from typing import Dict, Optional, List, Any
 import logging
 
-from .core import SwitchSVGGenerator, PortStatus, SwitchModel, Theme, PortShape
-from .single_row import SingleRowSwitchGenerator
+from .core import SwitchSVGGenerator, PortStatus, SwitchModel, Theme, PortShape, LayoutMode
 
 
 def parse_args() -> argparse.Namespace:
@@ -166,12 +165,13 @@ def create_switch(
     
     if layout == "single":
         # Create a single row switch
-        switch = SingleRowSwitchGenerator(
+        switch = SwitchSVGGenerator(
             num_ports=num_ports,
             sfp_ports=sfp_ports,
             output_file=output_file,
             switch_name=switch_name,
-            theme=theme_enum
+            theme=theme_enum,
+            layout_mode=LayoutMode.SINGLE_ROW  # Use single row layout
         )
     elif layout == "double":
         # Create a double row (zigzag) switch
@@ -180,7 +180,8 @@ def create_switch(
             sfp_ports=sfp_ports,
             output_file=output_file,
             switch_name=switch_name,
-            theme=theme_enum
+            theme=theme_enum,
+            layout_mode=LayoutMode.ZIGZAG  # Use zigzag layout
         )
     elif layout == "sfp-only":
         # Create an SFP-only switch

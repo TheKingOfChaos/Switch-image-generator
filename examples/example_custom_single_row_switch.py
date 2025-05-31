@@ -12,7 +12,7 @@ import os
 # Add the project root directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.single_row_switch_generator import SingleRowSwitchGenerator, SwitchModel, Theme, PortStatus
+from src.switch_svg_generator import SwitchSVGGenerator, SwitchModel, Theme, PortStatus, LayoutMode
 
 def main():
     """Create a customized single row switch with various configurations."""
@@ -59,24 +59,25 @@ def main():
     }
     
     # Create the switch with the requested configuration
-    switch = SingleRowSwitchGenerator(
+    switch = SwitchSVGGenerator(
         num_ports=16,  # 16 normal ports
         switch_width=900,  # Width to accommodate all ports
         switch_height=180,  # Standard height
         switch_model=SwitchModel.DATA_CENTER,  # Data center model
         switch_name="Custom Data Center Switch",
         sfp_ports=2,  # 2 SFP ports
-        output_file="custom_single_row_switch.svg",
+        output_file="examples/output/custom_single_row_switch.svg",
         theme=Theme.LIGHT,  # Light theme
         port_vlan_map=port_vlan_map,
         port_status_map=port_status_map,
         port_labels=port_labels,
-        vlan_colors=vlan_colors
+        vlan_colors=vlan_colors,
+        layout_mode=LayoutMode.SINGLE_ROW  # Use single row layout
     )
     
     # Generate and save the SVG
     switch.save_svg()
-    print("Custom switch SVG generated as 'custom_single_row_switch.svg'")
+    print("Custom switch SVG generated as 'examples/output/custom_single_row_switch.svg'")
     
     # Optionally preview the SVG in a web browser
     switch.preview_svg()

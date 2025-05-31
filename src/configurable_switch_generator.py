@@ -26,17 +26,14 @@ sys.path.insert(0, os.path.dirname(current_dir))  # Add parent directory too
 # Try different import approaches to handle both direct and relative imports
 try:
     # Try direct import first (when run from project root)
-    from src.switch_svg_generator import SwitchSVGGenerator, SwitchModel, Theme, PortStatus
-    from src.single_row_switch_generator import SingleRowSwitchGenerator
+    from src.switch_svg_generator import SwitchSVGGenerator, SwitchModel, Theme, PortStatus, LayoutMode
 except ImportError:
     try:
         # Try relative import (when run as a module)
-        from switch_svg_generator import SwitchSVGGenerator, SwitchModel, Theme, PortStatus
-        from single_row_switch_generator import SingleRowSwitchGenerator
+        from switch_svg_generator import SwitchSVGGenerator, SwitchModel, Theme, PortStatus, LayoutMode
     except ImportError:
         # Last resort - absolute import (when src is in path)
-        from switch_svg_generator import SwitchSVGGenerator, SwitchModel, Theme, PortStatus
-        from single_row_switch_generator import SingleRowSwitchGenerator
+        from switch_svg_generator import SwitchSVGGenerator, SwitchModel, Theme, PortStatus, LayoutMode
 
 def generate_switch(layout_type, num_ports, sfp_ports, output_file, switch_name=None, theme=Theme.DARK):
     """
@@ -97,7 +94,7 @@ def generate_switch(layout_type, num_ports, sfp_ports, output_file, switch_name=
             port_labels[num_ports + i + 1] = f"SFP{i+1}"
         
         # Create single row switch
-        switch = SingleRowSwitchGenerator(
+        switch = SwitchSVGGenerator(
             num_ports=num_ports,
             switch_width=max(800, 30 + (num_ports * 32) + (sfp_ports * 44) + 30),  # Dynamic width based on ports
             switch_height=180,
@@ -106,7 +103,8 @@ def generate_switch(layout_type, num_ports, sfp_ports, output_file, switch_name=
             sfp_ports=sfp_ports,
             output_file=output_file,
             theme=theme,
-            port_labels=port_labels
+            port_labels=port_labels,
+            layout_mode=LayoutMode.SINGLE_ROW  # Use single row layout
         )
     else:  # double row (zigzag)
         if num_ports > 48:
@@ -135,7 +133,8 @@ def generate_switch(layout_type, num_ports, sfp_ports, output_file, switch_name=
             sfp_ports=sfp_ports,
             output_file=output_file,
             theme=theme,
-            port_labels=port_labels
+            port_labels=port_labels,
+            layout_mode=LayoutMode.ZIGZAG  # Use zigzag layout
         )
     
     # Generate and save the SVG
