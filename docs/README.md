@@ -13,7 +13,10 @@ A Python tool for generating SVG diagrams of network switches with configurable 
 - Dark/light theme support
 - Different port shapes (square, rounded, circular)
 - Preview generated SVGs in a web browser
-- Comprehensive command-line interface
+- Multiple interfaces:
+  - Graphical User Interface (GUI) for easy configuration
+  - Comprehensive command-line interface
+  - Python API for programmatic integration
 
 ## Installation
 
@@ -25,6 +28,27 @@ chmod +x switch_svg_generator.py
 ```
 
 ## Usage
+
+### Graphical User Interface (GUI)
+
+The easiest way to use the Network Switch SVG Generator is through the graphical user interface:
+
+```bash
+# Run the GUI with automatic dependency installation
+./run_gui.py
+
+# Or run the GUI directly if dependencies are already installed
+./gui.py
+```
+
+The GUI provides an intuitive interface for configuring and generating switch SVG visualizations, with features including:
+
+- Real-time preview of the switch
+- Configuration options for all switch parameters
+- Save and preview functionality
+- Support for all layout modes and options
+
+For more information on using the GUI, see the [GUI Documentation](GUI_DOCUMENTATION.md).
 
 ### Command Line Interface
 

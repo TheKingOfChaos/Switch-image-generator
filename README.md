@@ -26,6 +26,9 @@ switch_grafic_generator/
 │   └── ...                             # Test files
 ├── tools/                # Utility scripts
 │   └── ...                             # Tool files
+├── gui.py                # Graphical user interface
+├── run_gui.py            # Script to run the GUI with dependency installation
+├── requirements_gui.txt  # GUI dependencies
 └── generate_switch.py    # Main script (entry point)
 ```
 
@@ -35,6 +38,10 @@ switch_grafic_generator/
   - Single row layout with up to 24 normal ports and 2 SFP ports
   - Double row (zigzag) layout with up to 48 normal ports and 6 SFP ports
   - SFP-only mode with 4-32 SFP ports and no regular ports
+- Multiple interfaces for generating switch visualizations:
+  - Graphical User Interface (GUI) for easy configuration and real-time preview
+  - Command-Line Interface (CLI) for scripting and automation
+  - Python API for programmatic integration
 - Choose layout mode directly in the SwitchSVGGenerator class:
   - Use `layout_mode=LayoutMode.ZIGZAG` for the traditional zigzag layout (default)
   - Use `layout_mode=LayoutMode.SINGLE_ROW` for a single row layout
@@ -51,6 +58,23 @@ switch_grafic_generator/
 - Customize spacing between legend title and legend items
 
 ## Quick Start
+
+### Using the Graphical User Interface (GUI)
+
+```bash
+# Run the GUI with automatic dependency installation
+./run_gui.py
+
+# Or run the GUI directly if dependencies are already installed
+./gui.py
+```
+
+The GUI provides an intuitive interface for configuring and generating switch SVG visualizations. It includes:
+
+- Real-time preview of the switch
+- Configuration options for all switch parameters
+- Save and preview functionality
+- Support for all layout modes and options
 
 ### Using the Command-Line Interface
 
@@ -128,3 +152,4 @@ For more detailed documentation, see:
 - [Comprehensive Documentation](docs/COMPREHENSIVE_DOCUMENTATION.md)
 - [Configurable Switch Documentation](docs/CONFIGURABLE_SWITCH_README.md)
 - [Single Row Switch Documentation](docs/SINGLE_ROW_SWITCH_README.md)
+- [GUI Documentation](docs/GUI_DOCUMENTATION.md)
