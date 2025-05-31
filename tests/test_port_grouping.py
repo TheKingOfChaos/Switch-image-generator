@@ -19,10 +19,10 @@ switch_with_grouping = SwitchSVGGenerator(
     switch_height=130,
     output_file="switch_with_port_grouping.svg",
     switch_model=SwitchModel.ENTERPRISE,
-    switch_name="Switch with Port Grouping (4 ports per group)",
+    switch_name="Switch with Port Grouping (8 ports per group)",
     theme=Theme.LIGHT,
     sfp_ports=4,
-    port_group_size=4,  # Group ports in groups of 4
+    port_group_size=8,  # Group ports in groups of 4
     port_group_spacing=7  # Add 7px spacing between groups
 )
 

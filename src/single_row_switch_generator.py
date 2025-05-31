@@ -40,6 +40,62 @@ class SingleRowSwitchGenerator(SwitchSVGGenerator):
         self.legend_spacing = legend_spacing
         self.legend_items_spacing = legend_items_spacing
     
+    def calculate_dimensions(self) -> tuple:
+        """
+        Calculate the dimensions for the switch and port layout.
+        
+        Returns:
+            Tuple of (adjusted_width, adjusted_height, ports_per_row, num_rows)
+        """
+        # Calculate port positioning
+        ports_per_row = self.num_ports  # All ports in a single row
+        num_rows = 1
+        
+        # Calculate space needed for ports
+        ports_height = self.port_height
+        
+        # Calculate space needed for header (switch name, model, etc.)
+        header_height = 40
+        if self.switch_model != SwitchModel.BASIC:
+            header_height += 10
+        
+        # Calculate space needed for legend
+        legend_height = max(20, 12 * (len(self.get_used_vlans()) // 4 + 1))
+        legend_height += 20  # Always add space for SFP ports in the legend height calculation
+        
+        # Define spacing constants
+        start_spacing = 30  # Space from start of switch to first port
+        left_edge_spacing = 20  # Actual spacing from left edge to first port
+        end_spacing = left_edge_spacing  # Space from last port to right edge
+        sfp_spacing = 20    # Space between last regular port and first SFP port
+        
+        # Calculate width needed for regular ports
+        regular_ports_width = self.num_ports * (self.port_width + self.port_spacing) - self.port_spacing
+        
+        # Calculate width needed for SFP ports if any
+        sfp_ports_width = 0
+        if self.sfp_ports > 0:
+            # SFP ports are wider than regular ports
+            sfp_width = 40
+            sfp_ports_width = self.sfp_ports * (sfp_width + self.port_spacing) - self.port_spacing
+        
+        # Calculate total width needed
+        if self.sfp_ports > 0:
+            total_width = start_spacing + regular_ports_width + sfp_spacing + sfp_ports_width + end_spacing
+        else:
+            total_width = start_spacing + regular_ports_width + end_spacing
+        
+        # Ensure minimum width
+        adjusted_width = max(280, total_width + 20)  # Add 20px for margins (10px on each side)
+        
+        # Set body_width for use in generate_switch_body
+        self.body_width = adjusted_width - 20  # Subtract margins
+        
+        # Calculate height based on switch height and legend
+        adjusted_height = self.switch_height + self.legend_spacing + legend_height
+        
+        return adjusted_width, adjusted_height, ports_per_row, num_rows
+    
     def generate_ports(self, adjusted_width: int, ports_per_row: int, num_rows: int) -> list:
         """
         Override the port generation to place all ports in a single row.
@@ -97,11 +153,22 @@ class SingleRowSwitchGenerator(SwitchSVGGenerator):
                       f'fill="white" text-anchor="middle" dominant-baseline="middle">{port_label}</text>')
             
             # Status indicator (small circle in corner if enabled)
-            if self.show_status_indicator and status != PortStatus.UP:
+            if self.show_status_indicator:
                 indicator_x = x + self.port_width - 5
                 indicator_y = y + 5
+                # Use specific colors for each status
+                if status == PortStatus.UP:
+                    indicator_color = "#2ecc71"  # Green for UP
+                    stroke_color = "#000000"     # Black border
+                elif status == PortStatus.DOWN:
+                    indicator_color = "#e74c3c"  # Red for DOWN
+                    stroke_color = "#000000"     # Black border
+                else:  # DISABLED
+                    indicator_color = "#000000"  # Black for DISABLED
+                    stroke_color = "#000000"     # Black border
+                
                 svg.append(f'    <circle cx="{indicator_x}" cy="{indicator_y}" r="3" '
-                          f'fill="{self.STATUS_COLORS[status]}" stroke="white" stroke-width="0.5" />')
+                          f'fill="{indicator_color}" stroke="{stroke_color}" stroke-width="0.5" />')
             
             svg.append(f'  </g>')
         
@@ -127,13 +194,15 @@ class SingleRowSwitchGenerator(SwitchSVGGenerator):
                 
                 sfp_num = self.num_ports + i + 1
                 
-                # SFP ports are typically for uplinks, so use a different color
-                sfp_color = "#3498db"  # Blue
+                # Use the VLAN color for the SFP port
+                sfp_color = self.get_port_color(sfp_num)
                 
                 # Create SFP port group with tooltip
                 sfp_label = self.port_labels.get(sfp_num, f"SFP{i+1}")
+                status = self.port_status_map.get(sfp_num, PortStatus.UP)
+                vlan_id = self.port_vlan_map.get(sfp_num, 1)
                 
-                tooltip = f"SFP Port: {sfp_num}, Label: {sfp_label}"
+                tooltip = f"SFP Port: {sfp_num}, Label: {sfp_label}, Status: {status.value}, VLAN: {vlan_id}"
                 
                 svg.append(f'  <g id="sfp-{i+1}">')
                 svg.append(f'    <title>{tooltip}</title>')
@@ -146,6 +215,24 @@ class SingleRowSwitchGenerator(SwitchSVGGenerator):
                 svg.append(f'    <text x="{sfp_x + sfp_width/2}" y="{sfp_y + sfp_height/2 + 4}" '
                           f'font-family="Arial" font-size="10" fill="white" '
                           f'text-anchor="middle" dominant-baseline="middle">{sfp_label}</text>')
+                
+                # Status indicator for SFP ports
+                if self.show_status_indicator:
+                    indicator_x = sfp_x + sfp_width - 5
+                    indicator_y = sfp_y + 5
+                    # Use specific colors for each status
+                    if status == PortStatus.UP:
+                        indicator_color = "#2ecc71"  # Green for UP
+                        stroke_color = "#000000"     # Black border
+                    elif status == PortStatus.DOWN:
+                        indicator_color = "#e74c3c"  # Red for DOWN
+                        stroke_color = "#000000"     # Black border
+                    else:  # DISABLED
+                        indicator_color = "#000000"  # Black for DISABLED
+                        stroke_color = "#000000"     # Black border
+                    
+                    svg.append(f'    <circle cx="{indicator_x}" cy="{indicator_y}" r="3" '
+                              f'fill="{indicator_color}" stroke="{stroke_color}" stroke-width="0.5" />')
                 
                 svg.append(f'  </g>')
         

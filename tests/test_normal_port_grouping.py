@@ -78,7 +78,7 @@ def main():
         vlan_colors=vlan_colors,
         port_vlan_map=port_vlan_map,
         sfp_ports=2,  # Add 2 SFP ports
-        port_group_size=6,  # Group ports in groups of 6
+        port_group_size=8,  # Group ports in groups of 6
         port_group_spacing=10  # Add 10px spacing between groups
     )
     
