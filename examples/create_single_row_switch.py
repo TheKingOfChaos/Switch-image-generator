@@ -12,13 +12,13 @@ import os
 # Add the project root directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.single_row_switch_generator import SingleRowSwitchGenerator, SwitchModel, Theme
+from src.switch_svg_generator import SwitchSVGGenerator, SwitchModel, Theme, LayoutMode
 
 def main():
     """Create a switch with one row of up to 24 normal ports and 2 SFP ports."""
     
     # Create the switch with the requested configuration
-    switch = SingleRowSwitchGenerator(
+    switch = SwitchSVGGenerator(
         num_ports=24,  # One row of up to 24 normal ports
         
         switch_model=SwitchModel.ENTERPRISE,  # Enterprise model for better appearance
@@ -29,6 +29,7 @@ def main():
         legend_spacing=30,  # Spacing between switch body and legend title
         legend_items_spacing=20,  # Spacing between legend title and legend items
         theme=Theme.DARK,  # Dark theme for better contrast
+        layout_mode=LayoutMode.SINGLE_ROW,  # Use single row layout
         # Optional: Add custom port labels for the SFP ports
         port_labels={
             25: "SFP1",

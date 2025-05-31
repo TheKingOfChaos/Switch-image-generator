@@ -62,6 +62,12 @@ class PortShape(Enum):
     CIRCULAR = "circular"
 
 
+class LayoutMode(Enum):
+    """Enum representing different port layout options."""
+    ZIGZAG = "zigzag"
+    SINGLE_ROW = "single_row"
+
+
 class SwitchSVGGenerator:
     """Class to generate SVG representations of network switches with colored ports."""
 
@@ -109,6 +115,7 @@ class SwitchSVGGenerator:
         legend_spacing: int = 20,  # Spacing between switch body and legend title
         legend_items_spacing: int = 8,  # Spacing between legend title and legend items
         legend_item_padding: int = 3,  # Padding between legend items (horizontal spacing)
+        legend_row_offset: int = 20,  # Offset for legend rows
         vlan_colors: Optional[Dict[int, str]] = None,
         port_vlan_map: Optional[Dict[int, int]] = None,
         port_status_map: Optional[Dict[int, PortStatus]] = None,
@@ -131,6 +138,7 @@ class SwitchSVGGenerator:
         sfp_only_mode: bool = False,  # When True, creates a switch with only SFP ports
         port_start_number: int = 1,  # Starting port number (0 or 1)
         zigzag_start_position: str = "top",  # First port position in zigzag pattern ("top" or "bottom")
+        layout_mode: LayoutMode = LayoutMode.ZIGZAG,  # Port layout mode (zigzag or single row)
     ):
         """
         Initialize the switch SVG generator.
@@ -156,6 +164,7 @@ class SwitchSVGGenerator:
             sfp_only_mode: When True, creates a switch with only SFP ports (no regular ports)
             port_start_number: Starting port number (0 or 1)
             zigzag_start_position: First port position in zigzag pattern ("top" or "bottom")
+            legend_row_offset: Offset for legend rows
         """
         # Validate inputs based on mode
         self.sfp_only_mode = sfp_only_mode
@@ -196,6 +205,7 @@ class SwitchSVGGenerator:
         self.sfp_group_size = sfp_group_size
         self.port_group_size = port_group_size
         self.port_group_spacing = port_group_spacing
+        self.legend_row_offset = legend_row_offset
         
         # Use provided VLAN colors or defaults
         self.vlan_colors = vlan_colors or self.DEFAULT_VLAN_COLORS.copy()
@@ -243,6 +253,9 @@ class SwitchSVGGenerator:
                 self.switch_body_color = "#c0c0c0"  # Slightly darker gray for light theme
             else:
                 self.switch_body_color = "#3c4e60"  # Slightly lighter for dark theme
+                
+        # Store the layout mode
+        self.layout_mode = layout_mode
 
     def get_port_color(self, port_num: int) -> str:
         """
@@ -399,17 +412,21 @@ class SwitchSVGGenerator:
             num_rows = 0
             ports_height = 0
         else:
-            # Normal mode - calculate regular port layout
-            ports_per_row = min(self.num_ports, 24)  # Use 24 ports per row max
-            num_rows = (self.num_ports + ports_per_row - 1) // ports_per_row
+            # Normal mode - calculate regular port layout based on layout mode
+            if self.layout_mode == LayoutMode.SINGLE_ROW:
+                # Single row layout - all ports in one row
+                ports_per_row = self.num_ports
+                num_rows = 1
+            else:  # ZIGZAG layout
+                ports_per_row = min(self.num_ports, 24)  # Use 24 ports per row max
+                num_rows = (self.num_ports + ports_per_row - 1) // ports_per_row
+                
+                # For zigzag pattern, we need half as many rows (rounded up)
+                if self.num_ports > 1:
+                    num_rows = (self.num_ports + 1) // 2  # Ceiling division for odd number of ports
             
             # Calculate space needed for ports
             row_spacing = 4  # Reduced from 6px to 4px for more compact layout
-            
-            # For zigzag pattern, we need half as many rows (rounded up)
-            if self.num_ports > 1:
-                num_rows = (self.num_ports + 1) // 2  # Ceiling division for odd number of ports
-            
             ports_height = num_rows * (self.port_height + row_spacing)
         
         # Calculate space needed for header (switch name, model, etc.)
@@ -843,21 +860,12 @@ class SwitchSVGGenerator:
                 legend_text = f"{vlan_id}"
             legend_items.append((legend_text, color))
         
-        # Status Legend - only show for switches with 10 or more ports
-        if self.num_ports >= 10:
-            # Add UP status with green color
-            legend_items.append(("Port up", "#2ecc71"))  # Green for UP
-            
-            # Add DOWN status with red color if it's used
-            if PortStatus.DOWN in self.get_used_statuses():
-                legend_items.append(("Port down", "#e74c3c"))  # Red for DOWN
-            else:
-                # Add it anyway for completeness
-                legend_items.append(("Port down", "#e74c3c"))  # Red for DOWN
-            
-            # Add DISABLED status with black color if it's used
-            if PortStatus.DISABLED in self.get_used_statuses():
-                legend_items.append(("Port disabled", "#000000"))  # Black for DISABLED
+        # Status Legend - always show for switches with 4 or more ports
+        if self.num_ports >= 4:
+            # Always add all three status indicators for completeness
+            legend_items.append(("Port up", "#2ecc71"))      # Green for UP
+            legend_items.append(("Port down", "#e74c3c"))    # Red for DOWN
+            legend_items.append(("Port disabled", "#000000"))  # Black for DISABLED
         
         # We no longer need a separate SFP port legend entry since SFP ports use their VLAN colors
         
@@ -893,7 +901,7 @@ class SwitchSVGGenerator:
             # Check if this item would exceed the available width
             if current_x + item_width > legend_x + available_legend_width and i > 0:
                 # Start a new row
-                row_y += 25  # Move down 25px for the next row
+                row_y += self.legend_row_offset  # Move down 25px for the next row
                 current_x = legend_x
                 current_row_width = 0
             
@@ -926,7 +934,7 @@ class SwitchSVGGenerator:
                 status_item_widths.append(item_width)
                 logger.info(f"Status item '{label}' width: {text_width}px, total: {item_width}px")
             
-            # Distribute status items
+            # Distribute status items - ensure all status items are included
             current_x = legend_x
             current_row_width = 0
             
@@ -955,6 +963,54 @@ class SwitchSVGGenerator:
                 # Move to the next item position
                 current_x += item_width
                 current_row_width += item_width
+                
+                # Check if this is the last item and we need to ensure all status items are included
+                if i == len(status_items) - 1:
+                    # Check if we're missing the "Port disabled" status
+                    if not any(item[0] == "Port disabled" for item in status_items):
+                        # Add the "Port disabled" status
+                        disabled_label = "Port disabled"
+                        disabled_color = "#000000"  # Black for DISABLED
+                        disabled_text_width = self.get_text_width(disabled_label, font_size=10, font_family="Arial")
+                        disabled_item_width = 15 + disabled_text_width + self.legend_item_padding
+                        
+                        # Check if this item would exceed the available width
+                        if current_x + disabled_item_width > legend_x + available_legend_width:
+                            # Start a new row
+                            status_y += 25  # Move down 25px for the next row
+                            current_x = legend_x
+                        
+                        # Draw a circle for port disabled status
+                        circle_x = current_x + 5  # Center of the 10x10 space
+                        circle_y = status_y + 5   # Center of the 10x10 space
+                        svg.append(f'  <circle cx="{circle_x}" cy="{circle_y}" r="5" fill="{disabled_color}" stroke="#000000" stroke-width="1" />')
+                        
+                        # Draw the text
+                        svg.append(f'  <text x="{current_x + 15}" y="{status_y + 9}" font-family="Arial" '
+                                  f'font-size="10" fill="{self.theme_colors["text"]}">{disabled_label}</text>')
+                    
+                    # Check if we're missing the "Port down" status
+                    if not any(item[0] == "Port down" for item in status_items):
+                        # Add the "Port down" status
+                        down_label = "Port down"
+                        down_color = "#e74c3c"  # Red for DOWN
+                        down_text_width = self.get_text_width(down_label, font_size=10, font_family="Arial")
+                        down_item_width = 15 + down_text_width + self.legend_item_padding
+                        
+                        # Check if this item would exceed the available width
+                        if current_x + down_item_width > legend_x + available_legend_width:
+                            # Start a new row
+                            status_y += 25  # Move down 25px for the next row
+                            current_x = legend_x
+                        
+                        # Draw a circle for port down status
+                        circle_x = current_x + 5  # Center of the 10x10 space
+                        circle_y = status_y + 5   # Center of the 10x10 space
+                        svg.append(f'  <circle cx="{circle_x}" cy="{circle_y}" r="5" fill="{down_color}" stroke="#000000" stroke-width="1" />')
+                        
+                        # Draw the text
+                        svg.append(f'  <text x="{current_x + 15}" y="{status_y + 9}" font-family="Arial" '
+                                  f'font-size="10" fill="{self.theme_colors["text"]}">{down_label}</text>')
         
         return svg
 
@@ -992,92 +1048,166 @@ class SwitchSVGGenerator:
         # Track the current port number
         port_num = 1
         
-        # Generate regular RJ45 ports in a zigzag pattern (skip in SFP-only mode)
+        # Generate regular RJ45 ports (skip in SFP-only mode)
         if not self.sfp_only_mode:
             row_spacing = 4  # Use the same row spacing as defined in calculate_dimensions
             
-            # Calculate how many columns we need
-            # For zigzag pattern, we need twice as many columns
-            ports_per_row = min(self.num_ports, 48)  # Allow up to 48 ports in zigzag (24 per row)
-            num_cols = (self.num_ports + 1) // 2  # Ceiling division for odd number of ports
-            
-            for i in range(self.num_ports):
-                # Make sure we generate exactly num_ports ports, regardless of port_start_number
-                if i >= self.num_ports:
-                    break
+            # Handle different layout modes
+            if self.layout_mode == LayoutMode.SINGLE_ROW:
+                # Single row layout - all ports in one row
+                for i in range(self.num_ports):
+                    # Make sure we generate exactly num_ports ports, regardless of port_start_number
+                    if i >= self.num_ports:
+                        break
                     
-                # Calculate row and column for zigzag pattern based on zigzag_start_position
-                if self.zigzag_start_position == "top":
-                    # Even ports (0, 2, 4...) go in row 0 (top), odd ports (1, 3, 5...) go in row 1 (bottom)
-                    row = i % 2
-                else:  # "bottom"
-                    # Even ports (0, 2, 4...) go in row 1 (bottom), odd ports (1, 3, 5...) go in row 0 (top)
-                    row = (i + 1) % 2
-                col = i // 2
-                
-                # Calculate position with port grouping if enabled
-                if self.port_group_size > 0 and col > 0:
-                    # Calculate which group this port belongs to
-                    # We need to use column number (not port number) for grouping
-                    # since we're using a zigzag pattern
-                    group_num = col // self.port_group_size
+                    # Calculate position with port grouping if enabled
+                    if self.port_group_size > 0 and i > 0:
+                        # Calculate which group this port belongs to
+                        group_num = i // self.port_group_size
+                        
+                        # Add extra spacing between groups
+                        extra_spacing = group_num * self.port_group_spacing
+                        
+                        x = start_x + i * (self.port_width + self.port_spacing) + extra_spacing
+                    else:
+                        # Standard spacing without grouping
+                        x = start_x + i * (self.port_width + self.port_spacing)
                     
-                    # Add extra spacing between groups
-                    extra_spacing = group_num * self.port_group_spacing
+                    # All ports are in a single row
+                    y = start_y
                     
-                    x = start_x + col * (self.port_width + self.port_spacing) + extra_spacing
-                else:
-                    # Standard spacing without grouping
-                    x = start_x + col * (self.port_width + self.port_spacing)
+                    color = self.get_port_color(port_num)
                     
-                y = start_y + row * (self.port_height + row_spacing)
-                
-                color = self.get_port_color(port_num)
-                
-                # Create port group with tooltip
-                # Adjust the displayed port number based on port_start_number
-                display_port_num = i + self.port_start_number
-                port_label = self.port_labels.get(port_num, str(display_port_num))
-                status = self.port_status_map.get(port_num, PortStatus.UP)
-                vlan_id = self.port_vlan_map.get(port_num, 1)
-                
-                tooltip = f"Port: {port_num}, Label: {port_label}, Status: {status.value}, VLAN: {vlan_id}"
-                
-                svg.append(f'  <g id="port-{port_num}">') 
-                svg.append(f'    <title>{tooltip}</title>')
-                
-                # Port rectangle
-                svg.append(f'    <rect x="{x}" y="{y}" width="{self.port_width}" height="{self.port_height}" '
-                          f'fill="{color}" stroke="#000000" stroke-width="1" '
-                          f'rx="{port_shape_attrs["rx"]}" ry="{port_shape_attrs["ry"]}" />')
-                
-                # Port label - centered inside the port rectangle
-                text_x = x + (self.port_width // 2)
-                text_y = y + (self.port_height // 2) + 4  # Adjusted to center vertically
-                svg.append(f'    <text x="{text_x}" y="{text_y}" font-family="Arial" font-size="10" '
-                          f'fill="white" text-anchor="middle" dominant-baseline="middle">{port_label}</text>')
-                
-                # Status indicator (small circle in corner if enabled)
-                if self.show_status_indicator:
-                    indicator_x = x + self.port_width - 5
-                    indicator_y = y + 5
-                    # Use specific colors for each status
-                    if status == PortStatus.UP:
-                        indicator_color = "#2ecc71"  # Green for UP
-                        stroke_color = "#000000"     # Black border
-                    elif status == PortStatus.DOWN:
-                        indicator_color = "#e74c3c"  # Red for DOWN
-                        stroke_color = "#000000"     # Black border
-                    else:  # DISABLED
-                        indicator_color = "#000000"  # Black for DISABLED
-                        stroke_color = "#000000"     # Black border
+                    # Create port group with tooltip
+                    # Adjust the displayed port number based on port_start_number
+                    display_port_num = i + self.port_start_number
+                    port_label = self.port_labels.get(port_num, str(display_port_num))
+                    status = self.port_status_map.get(port_num, PortStatus.UP)
+                    vlan_id = self.port_vlan_map.get(port_num, 1)
                     
-                    svg.append(f'    <circle cx="{indicator_x}" cy="{indicator_y}" r="3" '
-                              f'fill="{indicator_color}" stroke="{stroke_color}" stroke-width="0.5" />')
+                    tooltip = f"Port: {port_num}, Label: {port_label}, Status: {status.value}, VLAN: {vlan_id}"
+                    
+                    svg.append(f'  <g id="port-{port_num}">')
+                    svg.append(f'    <title>{tooltip}</title>')
+                    
+                    # Port rectangle
+                    svg.append(f'    <rect x="{x}" y="{y}" width="{self.port_width}" height="{self.port_height}" '
+                              f'fill="{color}" stroke="#000000" stroke-width="1" '
+                              f'rx="{port_shape_attrs["rx"]}" ry="{port_shape_attrs["ry"]}" />')
+                    
+                    # Port label - centered inside the port rectangle
+                    text_x = x + (self.port_width // 2)
+                    text_y = y + (self.port_height // 2) + 4  # Adjusted to center vertically
+                    svg.append(f'    <text x="{text_x}" y="{text_y}" font-family="Arial" font-size="10" '
+                              f'fill="white" text-anchor="middle" dominant-baseline="middle">{port_label}</text>')
+                    
+                    # Status indicator (small circle in corner if enabled)
+                    if self.show_status_indicator:
+                        indicator_x = x + self.port_width - 5
+                        indicator_y = y + 5
+                        # Use specific colors for each status
+                        if status == PortStatus.UP:
+                            indicator_color = "#2ecc71"  # Green for UP
+                            stroke_color = "#000000"     # Black border
+                        elif status == PortStatus.DOWN:
+                            indicator_color = "#e74c3c"  # Red for DOWN
+                            stroke_color = "#000000"     # Black border
+                        else:  # DISABLED
+                            indicator_color = "#000000"  # Black for DISABLED
+                            stroke_color = "#000000"     # Black border
+                        
+                        svg.append(f'    <circle cx="{indicator_x}" cy="{indicator_y}" r="3" '
+                                  f'fill="{indicator_color}" stroke="{stroke_color}" stroke-width="0.5" />')
+                    
+                    svg.append(f'  </g>')
+                    
+                    port_num += 1
+            else:  # ZIGZAG layout
+                # Calculate how many columns we need
+                # For zigzag pattern, we need twice as many columns
+                ports_per_row = min(self.num_ports, 48)  # Allow up to 48 ports in zigzag (24 per row)
+                num_cols = (self.num_ports + 1) // 2  # Ceiling division for odd number of ports
                 
-                svg.append(f'  </g>')
-                
-                port_num += 1
+                for i in range(self.num_ports):
+                    # Make sure we generate exactly num_ports ports, regardless of port_start_number
+                    if i >= self.num_ports:
+                        break
+                        
+                    # Calculate row and column for zigzag pattern based on zigzag_start_position
+                    if self.zigzag_start_position == "top":
+                        # Even ports (0, 2, 4...) go in row 0 (top), odd ports (1, 3, 5...) go in row 1 (bottom)
+                        row = i % 2
+                    else:  # "bottom"
+                        # Even ports (0, 2, 4...) go in row 1 (bottom), odd ports (1, 3, 5...) go in row 0 (top)
+                        row = (i + 1) % 2
+                    col = i // 2
+                    
+                    # Calculate position with port grouping if enabled
+                    if self.port_group_size > 0 and col > 0:
+                        # Calculate which group this port belongs to
+                        # We need to use column number (not port number) for grouping
+                        # since we're using a zigzag pattern
+                        # For zigzag pattern, each column represents 2 ports, so we need to adjust
+                        # the port_group_size to be half of the actual port_group_size
+                        adjusted_group_size = max(1, self.port_group_size // 2)
+                        group_num = col // adjusted_group_size
+                        
+                        # Add extra spacing between groups
+                        extra_spacing = group_num * self.port_group_spacing
+                        
+                        x = start_x + col * (self.port_width + self.port_spacing) + extra_spacing
+                    else:
+                        # Standard spacing without grouping
+                        x = start_x + col * (self.port_width + self.port_spacing)
+                        
+                    y = start_y + row * (self.port_height + row_spacing)
+                    
+                    color = self.get_port_color(port_num)
+                    
+                    # Create port group with tooltip
+                    # Adjust the displayed port number based on port_start_number
+                    display_port_num = i + self.port_start_number
+                    port_label = self.port_labels.get(port_num, str(display_port_num))
+                    status = self.port_status_map.get(port_num, PortStatus.UP)
+                    vlan_id = self.port_vlan_map.get(port_num, 1)
+                    
+                    tooltip = f"Port: {port_num}, Label: {port_label}, Status: {status.value}, VLAN: {vlan_id}"
+                    
+                    svg.append(f'  <g id="port-{port_num}">') 
+                    svg.append(f'    <title>{tooltip}</title>')
+                    
+                    # Port rectangle
+                    svg.append(f'    <rect x="{x}" y="{y}" width="{self.port_width}" height="{self.port_height}" '
+                              f'fill="{color}" stroke="#000000" stroke-width="1" '
+                              f'rx="{port_shape_attrs["rx"]}" ry="{port_shape_attrs["ry"]}" />')
+                    
+                    # Port label - centered inside the port rectangle
+                    text_x = x + (self.port_width // 2)
+                    text_y = y + (self.port_height // 2) + 4  # Adjusted to center vertically
+                    svg.append(f'    <text x="{text_x}" y="{text_y}" font-family="Arial" font-size="10" '
+                              f'fill="white" text-anchor="middle" dominant-baseline="middle">{port_label}</text>')
+                    
+                    # Status indicator (small circle in corner if enabled)
+                    if self.show_status_indicator:
+                        indicator_x = x + self.port_width - 5
+                        indicator_y = y + 5
+                        # Use specific colors for each status
+                        if status == PortStatus.UP:
+                            indicator_color = "#2ecc71"  # Green for UP
+                            stroke_color = "#000000"     # Black border
+                        elif status == PortStatus.DOWN:
+                            indicator_color = "#e74c3c"  # Red for DOWN
+                            stroke_color = "#000000"     # Black border
+                        else:  # DISABLED
+                            indicator_color = "#000000"  # Black for DISABLED
+                            stroke_color = "#000000"     # Black border
+                        
+                        svg.append(f'    <circle cx="{indicator_x}" cy="{indicator_y}" r="3" '
+                                  f'fill="{indicator_color}" stroke="{stroke_color}" stroke-width="0.5" />')
+                    
+                    svg.append(f'  </g>')
+                    
+                    port_num += 1
         
         # Generate SFP ports if requested
         if self.sfp_ports > 0:
@@ -1154,8 +1284,13 @@ class SwitchSVGGenerator:
                         # Standard spacing without grouping
                         sfp_x = sfp_start_x + i * (sfp_width + sfp_port_spacing)
                     
-                    # All SFP ports are in the same row, aligned with the bottom row of regular ports
-                    sfp_y = start_y + (self.port_height + 4)  # Align with bottom row
+                    # Position SFP ports based on layout mode
+                    if self.layout_mode == LayoutMode.SINGLE_ROW:
+                        # In single row layout, all SFP ports are in the same row as regular ports
+                        sfp_y = start_y
+                    else:
+                        # In zigzag layout, SFP ports are aligned with the bottom row of regular ports
+                        sfp_y = start_y + (self.port_height + 4)  # Align with bottom row
                     
                     # Use the VLAN color for the SFP port
                     sfp_color = self.get_port_color(sfp_num)
@@ -1242,8 +1377,13 @@ class SwitchSVGGenerator:
                         # Standard spacing without grouping
                         sfp_x = sfp_start_x + col * (sfp_width + sfp_port_spacing)
                     
-                    # Position SFP ports vertically aligned with regular ports
-                    sfp_y = start_y + row * (self.port_height + 4)  # 4px spacing between rows
+                    # Position SFP ports based on layout mode
+                    if self.layout_mode == LayoutMode.SINGLE_ROW:
+                        # In single row layout, all SFP ports are in the same row
+                        sfp_y = start_y
+                    else:
+                        # In zigzag layout, position SFP ports vertically aligned with regular ports
+                        sfp_y = start_y + row * (self.port_height + 4)  # 4px spacing between rows
                     
                     # Use the VLAN color for the SFP port
                     sfp_color = self.get_port_color(sfp_num)

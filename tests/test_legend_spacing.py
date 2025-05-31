@@ -13,13 +13,13 @@ import os
 # Add the project root directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.single_row_switch_generator import SingleRowSwitchGenerator, SwitchModel, Theme
+from src.switch_svg_generator import SwitchSVGGenerator, SwitchModel, Theme, LayoutMode
 
 def main():
     """Create a switch with custom legend spacing values."""
     
     # Create the switch with custom legend spacing
-    switch = SingleRowSwitchGenerator(
+    switch = SwitchSVGGenerator(
         num_ports=24,
         switch_width=1000,
         switch_model=SwitchModel.ENTERPRISE,
@@ -30,6 +30,7 @@ def main():
         legend_spacing=40,  # Increased spacing between switch body and legend title
         legend_items_spacing=30,  # Increased spacing between legend title and items
         theme=Theme.DARK,
+        layout_mode=LayoutMode.SINGLE_ROW,  # Use single row layout
         port_labels={
             25: "SFP1",
             26: "SFP2"

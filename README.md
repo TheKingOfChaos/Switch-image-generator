@@ -7,14 +7,14 @@ A tool for generating SVG visualizations of network switches with configurable l
 ```
 switch_grafic_generator/
 ├── src/                  # Source code
-│   ├── switch_svg_generator.py         # Base generator class
-│   ├── single_row_switch_generator.py  # Single row layout generator
+│   ├── switch_svg_generator.py         # Base generator class with layout options
+│   ├── single_row_switch_generator.py  # Legacy class maintained for backward compatibility
 │   ├── configurable_switch_generator.py # Configurable generator with CLI
 │   └── generate_switch.py              # Internal entry point
 ├── examples/             # Example scripts
 │   ├── create_single_row_switch.py     # Example of single row switch
 │   ├── create_sfp_only_switch.py       # Example of SFP-only switch
-│   ├── test_normal_switch.py           # Example of normal switch
+│   ├── example_layout_modes.py         # Example of different layout modes
 │   └── ...                             # Other examples
 ├── docs/                 # Documentation
 │   ├── README.md                       # Original README
@@ -35,6 +35,9 @@ switch_grafic_generator/
   - Single row layout with up to 24 normal ports and 2 SFP ports
   - Double row (zigzag) layout with up to 48 normal ports and 6 SFP ports
   - SFP-only mode with 4-32 SFP ports and no regular ports
+- Choose layout mode directly in the SwitchSVGGenerator class:
+  - Use `layout_mode=LayoutMode.ZIGZAG` for the traditional zigzag layout (default)
+  - Use `layout_mode=LayoutMode.SINGLE_ROW` for a single row layout
 - Flexible SFP port layout options:
   - Zigzag layout (default) - SFP ports in a zigzag pattern (similar to regular ports)
   - Horizontal layout - All SFP ports in a single horizontal row
@@ -65,6 +68,37 @@ switch_grafic_generator/
 ./generate_switch.py --interactive
 ```
 
+### Using the Python API
+
+```python
+from src.switch_svg_generator import SwitchSVGGenerator, LayoutMode, SwitchModel, Theme
+
+# Create a switch with zigzag layout (default)
+generator = SwitchSVGGenerator(
+    num_ports=48,
+    sfp_ports=6,
+    output_file="zigzag_switch.svg"
+)
+generator.save_svg()
+
+# Create a switch with single row layout
+generator = SwitchSVGGenerator(
+    num_ports=24,
+    sfp_ports=2,
+    layout_mode=LayoutMode.SINGLE_ROW,
+    output_file="single_row_switch.svg"
+)
+generator.save_svg()
+
+# Create an SFP-only switch
+generator = SwitchSVGGenerator(
+    sfp_ports=8,
+    sfp_only_mode=True,
+    output_file="sfp_only_switch.svg"
+)
+generator.save_svg()
+```
+
 ### Command-Line Options
 
 | Option                           | Description                                                                           |
@@ -84,12 +118,13 @@ Check the `examples/` directory for sample scripts demonstrating different confi
 To run an example:
 
 ```bash
-python3 examples/create_single_row_switch.py
+python3 examples/example_layout_modes.py
 ```
 
 ## Documentation
 
 For more detailed documentation, see:
 
+- [Comprehensive Documentation](docs/COMPREHENSIVE_DOCUMENTATION.md)
 - [Configurable Switch Documentation](docs/CONFIGURABLE_SWITCH_README.md)
 - [Single Row Switch Documentation](docs/SINGLE_ROW_SWITCH_README.md)
